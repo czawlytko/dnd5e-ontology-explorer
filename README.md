@@ -6,6 +6,8 @@ Interactive views of the [DnD5eCharacter](https://w3id.org/DnD5eCharacter) ontol
 - **`docs/explorer.html`**: a 2D explorer with a collapsible class tree, a property schema graph and search.
 - **`docs/3d.html`**: a 3D force graph of both ontologies merged. Dots are colored by the source file,
   and the page notes where the two files don't line up.
+- **`docs/three.html`**: the same merged graph drawn directly with three.js, with three layouts: a cone of the class
+  hierarchy, the two files on separate planes, and a force layout.
 
 Open either file in a browser. They need internet access (for d3 / 3d-force-graph and fonts), and the 3D view needs WebGL.
 If GitHub Pages is enabled on the `docs/` folder, `docs/index.html` links to both pages.

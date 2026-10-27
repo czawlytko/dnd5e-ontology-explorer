@@ -29,4 +29,6 @@ with tempfile.TemporaryDirectory() as tmp:
     onto = json.loads(pathlib.Path(f"{tmp}/onto.json").read_text(encoding="utf-8"))
     onto["version"] = re.search(r'DnD5eCharacter:version\s+"([^"]+)"', dnd.read_text(encoding="utf-8")).group(1)
     page("explorer.html", json.dumps(onto, ensure_ascii=False, separators=(",", ":")), '<div class="app">', "explorer.html")
-    page("3d.html", pathlib.Path(f"{tmp}/onto_merged.json").read_text(encoding="utf-8"), '<div class="wrap">', "3d.html")
+    merged = pathlib.Path(f"{tmp}/onto_merged.json").read_text(encoding="utf-8")
+    page("3d.html", merged, '<div class="wrap">', "3d.html")
+    page("three.html", merged, '<div class="wrap">', "three.html")
