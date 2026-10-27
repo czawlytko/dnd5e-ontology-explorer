@@ -1,0 +1,239 @@
+@prefix TTRpg: <https://w3id.org/TTRpg#> .
+@prefix cc: <http://creativecommons.org/ns#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+TTRpg:	a foaf:Document ;
+		foaf:primaryTopic TTRpg:Ontology;
+		cc:license <http://creativecommons.org/licenses/by/4.0/>;
+		dct:creator <https://rwambacq.solidweb.org/profile/card#me>, <https://solid.robbevanherck.be/robbevanherck/profile/card#me>.
+
+<https://rwambacq.solidweb.org/profile/card#me> foaf:name "Ruben Wambacq"; foaf:mbox "ruben.wambacq@gmail.com".
+
+<https://solid.robbevanherck.be/robbevanherck/profile/card#me> foaf:name "Robbe Van Herck"; foaf:mbox "robbe@robbevanherck.be".
+
+TTRpg:Ontology a owl:Ontology ;
+              rdfs:label "TTRpg"@en ;
+              rdfs:comment "A specification for describing entities and events in a Tabletop Role Playing Game."@en .
+
+### Classes
+
+TTRpg:Player 	a rdfs:Class ;
+				rdfs:subClassOf foaf:Person ;
+				rdfs:label "Player"@en ;
+				rdfs:comment "A TTRpg:Player is the person who plays the tabletop game. This player can play as multiple TTRpg:PlayableCharacter ."@en .
+
+TTRpg:Character 	a rdfs:Class ;
+					rdfs:label "Character"@en ;
+					rdfs:comment "A TTRpg:Character is a fictional character within a TTRpg:Campaign."@en .
+
+TTRpg:CharacterType		a rdfs:Class ;
+						rdfs:label "Character Type"@en ;
+						rdfs:comment "A TTRpg:CharacterType describes the type of a TTRpg:Character, it is the parent class for any specific TTRpg:CharacterType."@en .
+
+TTRpg:PlayableCharacter 	a rdfs:Class ;
+							rdfs:subClassOf TTRpg:Character ;
+							rdfs:label "Playable Character"@en ;
+							rdfs:comment "A TTRpg:PlayableCharacter is a TTRpg:Character that is played and often created by a TTRPG:Player. The actions of this TTRpg:Character are decided by that TTrpg:Player."@en .
+
+TTRpg:Campaign 		a rdfs:Class ;
+					rdfs:label "Campaign"@en ;
+					rdfs:comment "A TTRpg:Campaign is a story, often told and/or created by a TTRpg:Player or a third party, such as a Dungeon Master"@en .
+
+TTRpg:World 		a rdfs:Class ;
+					rdfs:label "World"@en ;
+					rdfs:comment "A TTRpg:World is a description of a universe, often thought up by by a TTRpg:Player or a third party, such as a Dungeon Master, where the events of a TTRRpg:Campaign take place."@en .
+
+TTRpg:Location 		a rdfs:Class ;
+					rdfs:label "Location"@en ;
+					rdfs:comment "A TTRpg:Location is a place within a TTRpg:World"@en .
+
+TTRpg:Item 			a rdfs:Class ;
+					rdfs:label "Item"@en ;
+					rdfs:comment "Class that represents a specific TTRpg:Item that exists within a TTRpg:World and can be owned by a TTRpg:Character."@en .
+
+TTRpg:ItemType		a rdfs:Class ;
+					rdfs:label "Item Type"@en ;
+					rdfs:comment "A TTRpg:ItemType describes the type of a TTRpg:Item, it is the parent class for the specific TTRpg:ItemType"@en .
+
+TTRpg:Weapon		a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Weapon"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of weapon."@en .
+
+TTRpg:Consumable	a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Consumable"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of consumable."@en .
+
+TTRpg:Armor			a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Armor"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of armor."@en .
+
+TTRpg:Currency		a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Currency"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of currency."@en .
+
+TTRpg:Vehicle		a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Vehicle"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of vehicle."@en .
+
+TTRpg:Tool			a rdfs:Class ;
+					rdfs:subClassOf TTRpg:ItemType ;
+					rdfs:label "Tool"@en ;
+					rdfs:comment "A TTRpg:ItemType that describes any type of tool."@en .
+					
+TTRpg:Spell 		a rdfs:Class ;
+					rdfs:label "Spell"@en ;
+					rdfs:comment "Class that represents a specific TTRpg:Spell that exists within a TTRpg:World and can be learned or known by a TTRpg:Character."@en .
+
+TTRpg:SpellType		a rdfs:Class ;
+					rdfs:label "Spell Type"@en ;
+					rdfs:comment "A TTRpg:SpellType describes the type of a TTRpg:Spell, it is the parent class for any specific TTRpg:SpellType."@en .
+
+TTRpg:Action		a rdfs:Class ;
+					rdfs:label "Action"@en ;
+					rdfs:comment "A TTRpg:Action can be performed by a TTRpg:Character, possibly using a TTRpg:Item or TTRpg:Spell."@en .
+
+TTRpg:UseAction		a rdfs:Class ;
+					rdfs:label "Use Action"@en ;
+					rdfs:subClassOf TTRpg:Action ;
+					rdfs:comment "A type of TTRpg:Action that uses a TTRpg:Item."@en .
+
+TTRpg:CastAction	a rdfs:Class ;
+					rdfs:label "Cast Action"@en ;
+					rdfs:subClassOf TTRpg:Action ;
+					rdfs:comment "A type of TTRpg:Action that uses a TTRpg:Spell."@en .
+
+### Properties
+
+TTRpg:plays 	a rdf:Property ;
+				rdfs:label "Plays"@en;
+				rdfs:comment "Links a TTRpg:Player with a TTRpg:PlayableCharacter that this player plays as."@en;
+				owl:inverseOf TTRpg:playedBy;
+				rdfs:domain TTRpg:Player;
+				rdfs:range TTRpg:PlayableCharacter.
+
+TTRpg:playedBy 	a rdf:Property ;
+				rdfs:label "Played by"@en;
+				rdfs:comment "Links a TTRpg:PlayableCharacter with the TTRpg:Player who plays this character."@en;
+				owl:inverseOf TTRpg:plays;
+				rdfs:domain TTRpg:PlayableCharacter;
+				rdfs:range TTRpg:Player.
+
+TTRpg:performs 	a rdf:Property ;
+				rdfs:label "Performs"@en;
+				rdfs:comment "A property which indicates that the TTRpg:Character performs an TTRpg:Action"@en;
+				rdfs:domain TTRpg:Character;
+				rdfs:range TTRpg:Action.
+
+TTRpg:casts 	a rdf:Property ;
+				rdfs:label "Casts"@en;
+				rdfs:comment "A property which indicates that the TTRpg:Character casts a TTRpg:Spell"@en;
+				rdfs:domain TTRpg:CastAction;
+				rdfs:range TTRpg:Spell.
+
+TTRpg:uses	 	a rdf:Property ;
+				rdfs:label "Uses"@en;
+				rdfs:comment "A property which indicates that the TTRpg:Character uses an TTRpg:Item when performing an TTRpg:Action."@en;
+				rdfs:domain TTRpg:UseAction;
+				rdfs:range TTRpg:Item.
+
+TTRpg:type 		a rdf:Property ;
+				rdfs:label "Type"@en;
+				rdfs:comment "A property that can be used to specify the type of a TTRpg:Character"@en;
+				rdfs:domain TTRpg:Character;
+				rdfs:range TTRpg:CharacterType.
+
+TTRpg:type 		a rdf:Property ;
+				rdfs:label "Type"@en;
+				rdfs:comment "A property that can be used to specify the type of an TTRpg:Item"@en;
+				rdfs:domain TTRpg:Item;
+				rdfs:range TTRpg:ItemType.
+
+TTRpg:type 		a rdf:Property ;
+				rdfs:label "Type"@en;
+				rdfs:comment "A property that can be used to specify the type of a TTRpg:Spell"@en;
+				rdfs:domain TTRpg:Spell;
+				rdfs:range TTRpg:SpellType.
+
+TTRpg:knows		a rdf:Property ;
+				rdfs:label "Knows"@en;
+				rdfs:comment "A property that indicates a TTRpg:Character knows a TTRpg:Spell"@en;
+				rdfs:domain TTRpg:Character;
+				rdfs:range TTRpg:Spell.
+
+TTRpg:owns		a rdf:Property ;
+				rdfs:label "Owns"@en;
+				rdfs:comment "A property that indicates a TTRpg:Character owns an TTRpg:Item"@en;
+				rdfs:domain TTRpg:Character;
+				rdfs:range TTRpg:Item.
+
+TTRpg:hasCharacter 	a rdf:Property ;
+					rdfs:label "Has character"@en;
+					rdfs:comment "A property that indicates a TTRpg:Character exists in a TTRpg:Campaign"@en;
+					owl:inverseOf TTRpg:inCampaign;
+					rdfs:domain TTRpg:Campaign;
+					rdfs:range TTRpg:Character.
+
+TTRpg:inCampaign 	a rdf:Property ;
+					rdfs:label "In campaign"@en;
+					rdfs:comment "A property that indicates a TTRpg:Character exists in a TTRpg:Campaign"@en;
+					owl:inverseOf TTRpg:hasCharacter;
+					rdfs:domain TTRpg:Character;
+					rdfs:range TTRpg:Campaign.
+
+TTRpg:setting		a rdf:Property ;
+					rdfs:label "Setting"@en;
+					rdfs:comment "A property that indicates a TTRpg:World is used as the setting for a TTRpg:Campaign"@en;
+					rdfs:domain TTRpg:Campaign;
+					rdfs:range TTRpg:World.
+
+TTRpg:inWorld 		a rdf:Property ;
+					rdfs:label "In world"@en;
+					rdfs:comment "A property that indicates a TTRpg:World is used as the setting for a TTRpg:Campaign"@en;
+					owl:inverseOf TTRpg:hasLocation;
+					rdfs:domain TTRpg:Location;
+					rdfs:range TTRpg:World.
+
+TTRpg:hasLocation	a rdf:Property ;
+					rdfs:label "Has location"@en;
+					rdfs:comment "A property that indicates a TTRpg:Location exists in a TTRpg:World."@en;
+					owl:inverseOf TTRpg:inWorld;
+					rdfs:domain TTRpg:World;
+					rdfs:range TTRpg:Location.
+
+TTRpg:existsIn		a rdf:Property ;
+					rdfs:label "Exists in"@en;
+					rdfs:comment "A property that indicates an TTRpg:Item exists in a TTRpg:World."@en;
+					owl:invereOf TTRpg:hasItem;
+					rdfs:domain TTRpg:Item;
+					rdfs:range TTRpg:World.
+
+TTRpg:hasItem		a rdf:Property ;
+					rdfs:label "Has item"@en;
+					rdfs:comment "A property that indicates an TTRpg:Item exists in a TTRpg:World."@en;
+					owl:inverseOf TTRpg:existsIn;
+					rdfs:domain TTRpg:World;
+					rdfs:range TTRpg:Item.
+
+TTRpg:existsIn		a rdf:Property ;
+					rdfs:label "Exists in"@en;
+					rdfs:comment "A property that indicates a TTRpg:Spell exists in a TTRpg:World."@en;
+					owl:inverseOf TTRpg:hasSpell;
+					rdfs:domain TTRpg:Spell;
+					rdfs:range TTRpg:World.
+
+TTRpg:hasSpell		a rdf:Property ;
+					rdfs:label "Has spell"@en;
+					rdfs:comment "A property that indicates a TTRpg:Spell exists in a TTRpg:World."@en;
+					owl:inverseOf TTRpg:existsIn;
+					rdfs:domain TTRpg:World;
+					rdfs:range TTRpg:Spell.
+

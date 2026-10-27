@@ -1,0 +1,601 @@
+<title>D&amp;D 5e Character Ontology</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+/* Layout: one-screen explorer — header strip, graph canvas left, detail "stat block" panel right; stacks on phones */
+:root {
+  --bg: #f2f3f6;
+  --panel: #ffffff;
+  --fg: #1c2030;
+  --muted: #5d6477;
+  --line: #d5d9e3;
+  --link: #b9bfcd;
+  --accent: #a3261d;
+  --accent-soft: #f6e3e0;
+  --cat-char: #2b66a8;
+  --cat-feat: #b5541a;
+  --cat-world: #2f7d45;
+  --cat-gear: #85641b;
+  --cat-magic: #7344b0;
+  --f-display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141b; --panel: #1a1d27; --fg: #e4e6ee; --muted: #9aa1b4; --line: #2c3140; --link: #3c4254;
+    --accent: #f07a6c; --accent-soft: #3a1f1d;
+    --cat-char: #6fa6e6; --cat-feat: #ec955a; --cat-world: #6cc287; --cat-gear: #d6b15d; --cat-magic: #b293ec;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141b; --panel: #1a1d27; --fg: #e4e6ee; --muted: #9aa1b4; --line: #2c3140; --link: #3c4254;
+  --accent: #f07a6c; --accent-soft: #3a1f1d;
+  --cat-char: #6fa6e6; --cat-feat: #ec955a; --cat-world: #6cc287; --cat-gear: #d6b15d; --cat-magic: #b293ec;
+  color-scheme: dark;
+}
+.cat-char { --c: var(--cat-char) } .cat-feat { --c: var(--cat-feat) } .cat-world { --c: var(--cat-world) }
+.cat-gear { --c: var(--cat-gear) } .cat-magic { --c: var(--cat-magic) } .cat-none { --c: var(--muted) }
+
+html, body { height: 100% }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 15px; line-height: 1.45 }
+.app { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px; box-sizing: border-box }
+
+header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24px }
+.brand { min-width: 0 }
+.brand h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.7rem; line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: .01em }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: .86rem }
+.brand p b { font-weight: 500; color: var(--fg) }
+.cats { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto }
+.cat-btn { font: 500 .85rem/1 var(--f-body); color: var(--fg); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 11px 6px 9px; display: inline-flex; align-items: center; gap: 7px; cursor: pointer }
+.cat-btn:hover { border-color: var(--c) }
+.cat-btn .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c) }
+.cat-btn .n { color: var(--muted); font-variant-numeric: tabular-nums }
+
+main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 12px; min-height: 0 }
+.stage { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: grid; grid-template-rows: auto 1fr; min-height: 0; overflow: hidden }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 8px 10px; border-bottom: 1px solid var(--line) }
+.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden }
+.tabs button { font: 500 .88rem/1 var(--f-body); padding: 7px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--panel) }
+.search { position: relative; flex: 1 1 220px; min-width: 0; max-width: 340px }
+.search input { width: 100%; box-sizing: border-box; font: .92rem var(--f-body); padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg) }
+.search input:focus { outline: 2px solid var(--accent); outline-offset: -1px }
+.results { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; right: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / .14); max-height: 340px; overflow: auto; padding: 4px; margin: 0; list-style: none }
+.results li { padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; gap: 8px; align-items: baseline }
+.results li[aria-selected="true"], .results li:hover { background: var(--bg) }
+.results .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; transform: translateY(-1px) }
+.results small { color: var(--muted); font-family: var(--f-mono); font-size: .72rem; margin-left: auto; white-space: nowrap }
+.opts { display: flex; gap: 6px 12px; align-items: center; flex-wrap: wrap; font-size: .86rem; color: var(--muted) }
+.opts label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer }
+.btn { font: 500 .84rem/1 var(--f-body); padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--fg); cursor: pointer }
+.btn:hover { border-color: var(--muted) }
+button:focus-visible, .chip:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.canvas { position: relative; min-height: 0 }
+.canvas svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none }
+.canvas svg:active { cursor: grabbing }
+.hint { position: absolute; left: 10px; bottom: 8px; font-size: .78rem; color: var(--muted); pointer-events: none; background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 2px 6px; border-radius: 4px }
+
+/* tree */
+.link { fill: none; stroke: var(--link); stroke-width: 1.2 }
+.node { cursor: pointer }
+.node circle { stroke: var(--c); stroke-width: 1.8; fill: var(--panel) }
+.node.has-hidden circle { fill: var(--c) }
+.node.group circle { stroke-dasharray: 2 2 }
+.node.cat circle, .node.root circle { stroke-width: 2.5 }
+.node text { font: 13px var(--f-body); fill: var(--fg); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; dominant-baseline: middle }
+.node.cat text, .node.root text { font: 700 15px var(--f-display) }
+.node.group text { font-style: italic; fill: var(--muted) }
+.node text .cnt { fill: var(--muted); font: 11px var(--f-mono) }
+.node text .multi { fill: var(--accent); font: 11px var(--f-body) }
+.node.sel circle { stroke: var(--accent); stroke-width: 3; r: 7 }
+.node.sel text { font-weight: 700; fill: var(--accent) }
+.node:hover text { text-decoration: underline }
+
+/* schema */
+.edge { fill: none; stroke: var(--link); stroke-width: 1.4 }
+.edge.hot { stroke: var(--accent); stroke-width: 2.2 }
+.edge-label { font: 11.5px var(--f-mono); fill: var(--muted); paint-order: stroke; stroke: var(--panel); stroke-width: 4px; cursor: pointer; text-anchor: middle }
+.edge-label.hot { fill: var(--accent) }
+.snode rect { fill: var(--panel); stroke: var(--c); stroke-width: 1.8; rx: 5 }
+.snode.ext rect { stroke-dasharray: 4 3 }
+.snode.dt rect { fill: var(--bg); stroke: var(--line) }
+.snode text { font: 500 13px var(--f-body); fill: var(--fg); text-anchor: middle; dominant-baseline: middle; pointer-events: none }
+.snode.dt text { font: 12px var(--f-mono); fill: var(--muted) }
+.snode { cursor: pointer }
+.snode.sel rect { stroke: var(--accent); stroke-width: 3 }
+#arrow path { fill: var(--link) } #arrow-hot path { fill: var(--accent) }
+
+/* detail panel */
+aside { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: auto; min-height: 0; padding: 18px 18px 22px }
+.kicker { display: flex; align-items: center; gap: 8px; font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--c); font-weight: 700 }
+.kicker .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c) }
+aside h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.75rem; line-height: 1.1; margin: 6px 0 4px; text-wrap: balance }
+.iri { font: .76rem var(--f-mono); color: var(--muted); word-break: break-all }
+.ns-note { font-size: .8rem; color: var(--muted); margin-top: 4px }
+.rule { height: 0; border: 0; border-top: 2px solid var(--accent); margin: 14px 0; opacity: .7 }
+.desc { margin: 0; max-width: 62ch }
+.desc.empty { color: var(--muted); font-style: italic }
+.sec { margin-top: 16px }
+.sec h3 { font: 700 .74rem var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 7px; display: flex; gap: 6px }
+.sec h3 .n { font-family: var(--f-mono); font-weight: 400; letter-spacing: 0 }
+.chips { display: flex; flex-wrap: wrap; gap: 5px }
+.chip { font: .84rem/1.2 var(--f-body); border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 4px 9px 4px 7px; border-radius: 999px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; text-align: left }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c); flex: none }
+.chip:hover { border-color: var(--c) }
+.chip.static { cursor: default; font-family: var(--f-mono); font-size: .76rem }
+.chip.more { color: var(--muted); border-style: dashed }
+.rel { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: start; font-size: .88rem }
+.rel .p { font: .76rem var(--f-mono); color: var(--accent); padding-top: 5px; white-space: nowrap }
+.actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap }
+.meta { font-size: .78rem; color: var(--muted); margin-top: 22px; border-top: 1px solid var(--line); padding-top: 10px }
+
+@media (max-width: 860px) {
+  html, body { height: auto }
+  .app { height: auto }
+  main { grid-template-columns: minmax(0, 1fr) }
+  .stage { height: 64vh; min-height: 400px }
+  .cats { margin-left: 0 }
+  .brand h1 { font-size: 1.45rem }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <h1>D&amp;D 5e Character Ontology</h1>
+      <p><b id="st-classes"></b> classes · <b id="st-props"></b> properties · <b id="st-rels"></b> relation statements · v<span id="st-ver"></span>, an extension of the TTRpg ontology</p>
+    </div>
+    <nav class="cats" id="cats" aria-label="Categories"></nav>
+  </header>
+  <main>
+    <section class="stage">
+      <div class="toolbar">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tab-tree" aria-selected="true">Class tree</button>
+          <button role="tab" id="tab-schema" aria-selected="false">Property schema</button>
+        </div>
+        <div class="search">
+          <input id="q" type="search" placeholder="Find a class: Fireball, Rogue, Stealth…" autocomplete="off" aria-label="Search classes">
+          <ul class="results" id="results" role="listbox" hidden></ul>
+        </div>
+        <div class="opts" id="tree-opts">
+          <label><input type="checkbox" id="group-spells" checked> Group spells by school</label>
+          <button class="btn" id="collapse">Collapse all</button>
+        </div>
+        <div class="opts" id="schema-opts" hidden>
+          <button class="btn" id="relayout">Re-run layout</button>
+        </div>
+      </div>
+      <div class="canvas">
+        <svg id="tree-svg" aria-label="Class hierarchy tree"></svg>
+        <svg id="schema-svg" aria-label="Property domain and range graph" hidden></svg>
+        <div class="hint" id="hint">Click a node to open it · drag to pan · scroll or pinch to zoom</div>
+      </div>
+    </section>
+    <aside id="detail" aria-live="polite"></aside>
+  </main>
+</div>
+
+<script type="application/json" id="onto">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('onto').textContent);
+const byId = new Map(D.nodes.map(n => [n.id, n]));
+const propById = new Map(D.props.map(p => [p.id, p]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lbl = id => byId.get(id)?.label || id.split(':').pop();
+
+const kids = new Map();
+D.nodes.forEach(n => n.parents.forEach(p => { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(n.id); }));
+kids.forEach(a => a.sort((x, y) => lbl(x).localeCompare(lbl(y))));
+const outRels = new Map(), inRels = new Map();
+D.rels.forEach(([s, p, o]) => {
+  if (!outRels.has(s)) outRels.set(s, []); outRels.get(s).push([p, o]);
+  if (!inRels.has(o)) inRels.set(o, []); inRels.get(o).push([p, s]);
+});
+const schoolOf = new Map(D.rels.filter(r => r[1] === 'dnd:inMagicSchool').map(r => [r[0], r[2]]));
+
+const CATS = [
+  { key: 'char', name: 'Character', roots: ['ttrpg:CharacterType', 'dnd:Subrace', 'dnd:Variant', 'dnd:Alignment', 'dnd:DraconicAncestry'] },
+  { key: 'feat', name: 'Class features', roots: ['dnd:Subclass', 'dnd:FightingStyle'] },
+  { key: 'world', name: 'Creatures & terrain', roots: ['dnd:MonsterType', 'dnd:Terrain'] },
+  { key: 'gear', name: 'Equipment', roots: ['ttrpg:ItemType', 'ttrpg:ItemEnhancement', 'ttrpg:Weapon', 'ttrpg:Armor', 'ttrpg:Currency', 'ttrpg:Tools'] },
+  { key: 'magic', name: 'Magic', roots: ['ttrpg:SpellType', 'ttrpg:Spell'] },
+];
+const allRoots = D.nodes.filter(n => !n.parents.length).map(n => n.id);
+const listed = new Set(CATS.flatMap(c => c.roots));
+allRoots.filter(r => !listed.has(r)).forEach(r => CATS[0].roots.push(r));
+// a class takes the category of the first root that reaches it
+const catOf = new Map(), catMembers = new Map(CATS.map(c => [c.key, new Set()]));
+CATS.forEach(c => {
+  const stack = [...c.roots];
+  while (stack.length) {
+    const id = stack.pop();
+    catMembers.get(c.key).add(id);
+    if (!catOf.has(id)) catOf.set(id, c.key);
+    (kids.get(id) || []).forEach(k => { if (!catMembers.get(c.key).has(k)) stack.push(k); });
+  }
+});
+const catCls = id => 'cat-' + (catOf.get(id) || 'none');
+
+document.getElementById('st-classes').textContent = D.nodes.filter(n => n.id.startsWith('dnd:')).length;
+document.getElementById('st-props').textContent = D.props.length;
+document.getElementById('st-rels').textContent = D.rels.length;
+document.getElementById('st-ver').textContent = D.version;
+
+/* ---------- tree model ---------- */
+let groupSpells = true;
+function mk(kind, ref, label, cat, parent) {
+  return { key: (parent ? parent.key + '/' : '') + (ref || label), kind, ref, label, cat, parent, open: false, _kids: null,
+    anc: new Set([...(parent?.anc || []), ref].filter(Boolean)) };
+}
+const ROOT = mk('root', null, 'D&D 5e Character', null, null);
+ROOT.key = 'R';
+function getKids(t) {
+  if (t._kids) return t._kids;
+  let out = [];
+  if (t.kind === 'root') out = CATS.map(c => mk('cat', null, c.name, c.key, t));
+  else if (t.kind === 'cat') out = CATS.find(c => c.key === t.cat).roots.map(id => mk('class', id, lbl(id), t.cat, t));
+  else if (t.kind === 'group') out = t.members.map(id => mk('class', id, lbl(id), t.cat, t));
+  else if (t.ref === 'ttrpg:Spell' && groupSpells) {
+    const by = d3.group(kids.get(t.ref) || [], id => schoolOf.get(id) || '');
+    out = [...by].sort((a, b) => lbl(a[0]).localeCompare(lbl(b[0]))).map(([school, ids]) => {
+      const g = mk('group', null, school ? lbl(school) : 'No school', t.cat, t);
+      g.key = t.key + '/school:' + school; g.school = school; g.members = ids; return g;
+    });
+  } else out = (kids.get(t.ref) || []).filter(id => !t.anc.has(id)).map(id => mk('class', id, lbl(id), t.cat, t));
+  return (t._kids = out);
+}
+const nKids = t => t.kind === 'group' ? t.members.length : t.kind === 'class' ? (kids.get(t.ref) || []).length : getKids(t).length;
+
+/* ---------- tree view ---------- */
+const tsvg = d3.select('#tree-svg');
+const tg = tsvg.append('g');
+const gLinks = tg.append('g'), gNodes = tg.append('g');
+const tzoom = d3.zoom().scaleExtent([0.15, 3]).on('zoom', e => tg.attr('transform', e.transform));
+tsvg.call(tzoom).on('dblclick.zoom', null);
+let selected = null, lastPos = new Map();
+const DX = 22, DY = 200;
+
+function renderTree(sourceKey) {
+  const h = d3.hierarchy(ROOT, t => t.open ? getKids(t) : null);
+  d3.tree().nodeSize([DX, DY]).separation((a, b) => a.parent === b.parent ? 1 : 1.25)(h);
+  const nodes = h.descendants(), links = h.links();
+  const src = lastPos.get(sourceKey) || { x: 0, y: 0 };
+  const srcNew = nodes.find(n => n.data.key === sourceKey) || h;
+  const dur = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320;
+  const T = tsvg.transition().duration(dur);
+  const diag = d3.linkHorizontal().x(d => d.y).y(d => d.x);
+
+  gLinks.selectAll('path').data(links, d => d.target.data.key).join(
+    enter => enter.append('path').attr('class', 'link').attr('d', () => diag({ source: src, target: src })),
+    update => update,
+    exit => exit.transition(T).attr('d', () => diag({ source: srcNew, target: srcNew })).remove()
+  ).transition(T).attr('d', diag);
+
+  const node = gNodes.selectAll('g.node').data(nodes, d => d.data.key).join(
+    enter => {
+      const g = enter.append('g').attr('transform', `translate(${src.y},${src.x})`).attr('opacity', 0)
+        .attr('tabindex', 0).attr('role', 'button');
+      g.append('circle').attr('r', 5);
+      g.append('text');
+      g.on('click', (e, d) => onTreeClick(d.data));
+      g.on('keydown', (e, d) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTreeClick(d.data); } });
+      return g;
+    },
+    update => update,
+    exit => exit.transition(T).attr('transform', `translate(${srcNew.y},${srcNew.x})`).attr('opacity', 0).remove()
+  );
+  node.attr('class', d => {
+    const t = d.data, n = nKids(t);
+    return ['node', t.kind, t.ref ? catCls(t.ref) : 'cat-' + (t.cat || 'none'),
+      n && !t.open ? 'has-hidden' : '', isSel(t) ? 'sel' : ''].join(' ');
+  }).attr('aria-label', d => d.data.label);
+  node.select('text').each(function (d) {
+    const t = d.data, n = nKids(t), el = d3.select(this);
+    const leftSide = t.kind === 'root';
+    el.attr('x', leftSide ? -10 : 10).attr('text-anchor', leftSide ? 'end' : 'start').text(t.label);
+    if (n && !t.open) el.append('tspan').attr('class', 'cnt').text('  ' + n);
+    const np = t.ref ? (byId.get(t.ref)?.parents.length || 0) : 0;
+    if (np > 1) el.append('tspan').attr('class', 'multi').text(`  ×${np} parents`);
+  });
+  node.transition(T).attr('opacity', 1).attr('transform', d => `translate(${d.y},${d.x})`);
+  lastPos = new Map(nodes.map(n => [n.data.key, { x: n.x, y: n.y }]));
+}
+function isSel(t) {
+  if (!selected) return false;
+  if (selected.type === 'class') return t.ref === selected.id || (t.kind === 'group' && t.school === selected.id);
+  if (selected.type === 'cat') return t.kind === 'cat' && t.cat === selected.id;
+  return false;
+}
+function onTreeClick(t) {
+  if (nKids(t)) t.open = !t.open;
+  if (t.kind === 'class') select({ type: 'class', id: t.ref }, false, true);
+  else if (t.kind === 'group') select(t.school ? { type: 'class', id: t.school } : null, false, true);
+  else if (t.kind === 'cat') select({ type: 'cat', id: t.cat }, false, true);
+  renderTree(t.key);
+}
+function centerOn(key, xFrac = 0.32) {
+  const p = lastPos.get(key); if (!p) return;
+  const box = tsvg.node().getBoundingClientRect();
+  const k = d3.zoomTransform(tsvg.node()).k || 1;
+  tsvg.transition().duration(450).call(tzoom.transform, d3.zoomIdentity.translate(box.width * xFrac - p.y * k, box.height / 2 - p.x * k).scale(k));
+}
+function chainTo(id) {
+  const chain = [id]; const seen = new Set([id]);
+  let cur = id;
+  while (byId.get(cur)?.parents.length) {
+    const p = byId.get(cur).parents.find(x => !seen.has(x)); if (!p) break;
+    chain.unshift(p); seen.add(p); cur = p;
+  }
+  return chain;
+}
+function reveal(id) {
+  const chain = chainTo(id);
+  const cat = CATS.find(c => c.roots.includes(chain[0]));
+  if (!cat) return;
+  ROOT.open = true;
+  let t = getKids(ROOT).find(k => k.cat === cat.key); t.open = true;
+  for (let i = 0; i < chain.length; i++) {
+    if (t.kind === 'class' && t.ref === 'ttrpg:Spell' && groupSpells) {
+      const g = getKids(t).find(k => k.members.includes(chain[i])); g.open = true; t = g;
+    }
+    const next = getKids(t).find(k => k.ref === chain[i]); if (!next) break;
+    t = next;
+    if (i < chain.length - 1) t.open = true;
+  }
+  renderTree(t.key);
+  setTimeout(() => centerOn(t.key), 340);
+}
+function collapseAll() {
+  const walk = t => { if (t._kids) t._kids.forEach(walk); if (t.kind !== 'root') t.open = false; };
+  walk(ROOT); ROOT.open = true;
+  getKids(ROOT).forEach(c => c.open = true);
+  renderTree('R');
+  setTimeout(fitTree, 340);
+}
+function fitTree() {
+  const b = tg.node().getBBox(), box = tsvg.node().getBoundingClientRect();
+  if (!b.width || !box.width) return;
+  const k = Math.min(1.1, 0.9 * Math.min(box.width / b.width, box.height / b.height));
+  tsvg.transition().duration(450).call(tzoom.transform,
+    d3.zoomIdentity.translate(box.width / 2 - (b.x + b.width / 2) * k, box.height / 2 - (b.y + b.height / 2) * k).scale(k));
+}
+document.getElementById('group-spells').addEventListener('change', e => {
+  groupSpells = e.target.checked;
+  const walk = t => { if (t.kind === 'class' && t.ref === 'ttrpg:Spell') t._kids = null; else (t._kids || []).forEach(walk); };
+  walk(ROOT);
+  renderTree('R');
+});
+document.getElementById('collapse').addEventListener('click', collapseAll);
+
+/* ---------- schema view ---------- */
+const ssvg = d3.select('#schema-svg');
+const sg = ssvg.append('g');
+const szoom = d3.zoom().scaleExtent([0.2, 3]).on('zoom', e => sg.attr('transform', e.transform));
+ssvg.call(szoom).on('dblclick.zoom', null);
+const defs = ssvg.append('defs');
+[['arrow', ''], ['arrow-hot', '']].forEach(([id]) => defs.append('marker').attr('id', id).attr('viewBox', '0 0 10 10').attr('refX', 9).attr('refY', 5)
+  .attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto-start-reverse').append('path').attr('d', 'M0,0L10,5L0,10z'));
+const sNodes = [...new Set(D.props.flatMap(p => [p.domain, p.range]))].map(id => ({
+  id, label: byId.has(id) ? lbl(id) : id.startsWith('xsd:') || id.startsWith('owl:') ? id : id.split(':').pop(),
+  dt: id.startsWith('xsd:') || id.startsWith('owl:'), ext: !byId.has(id) && !id.startsWith('xsd:') && !id.startsWith('owl:')
+}));
+const sIdx = new Map(sNodes.map(n => [n.id, n]));
+const sLinks = D.props.map(p => ({ source: sIdx.get(p.domain), target: sIdx.get(p.range), p }));
+sNodes.forEach(n => { n.w = Math.max(64, n.label.length * (n.dt ? 7.6 : 7.4) + 22); n.h = 28; });
+const gE = sg.append('g'), gEL = sg.append('g'), gSN = sg.append('g');
+const edge = gE.selectAll('path').data(sLinks).join('path').attr('class', 'edge').attr('marker-end', 'url(#arrow)');
+const edgeLbl = gEL.selectAll('text').data(sLinks).join('text').attr('class', 'edge-label').text(d => d.p.id.split(':')[1])
+  .on('click', (e, d) => select({ type: 'prop', id: d.p.id }, false));
+edgeLbl.append('title').text(d => `${d.p.label}: ${lbl(d.p.domain)} → ${d.p.range}`);
+const snode = gSN.selectAll('g').data(sNodes).join('g')
+  .attr('class', d => ['snode', d.dt ? 'dt' : '', d.ext ? 'ext' : '', byId.has(d.id) ? catCls(d.id) : 'cat-none'].join(' '))
+  .attr('tabindex', 0).attr('role', 'button').attr('aria-label', d => d.label)
+  .on('click', (e, d) => { if (byId.has(d.id)) select({ type: 'class', id: d.id }, false); })
+  .on('keydown', (e, d) => { if (e.key === 'Enter' && byId.has(d.id)) select({ type: 'class', id: d.id }, false); });
+snode.append('rect').attr('x', d => -d.w / 2).attr('y', -14).attr('width', d => d.w).attr('height', 28);
+snode.append('text').text(d => d.label);
+snode.append('title').text(d => d.ext ? `${d.id} (defined in the parent TTRpg ontology)` : d.dt ? `${d.id} (literal datatype)` : d.id);
+const sim = d3.forceSimulation(sNodes)
+  .force('link', d3.forceLink(sLinks).distance(d => d.target.dt ? 120 : 170).strength(0.6))
+  .force('charge', d3.forceManyBody().strength(-900))
+  .force('collide', d3.forceCollide().radius(d => d.w / 2 + 14))
+  .force('x', d3.forceX().strength(0.04)).force('y', d3.forceY().strength(0.06))
+  .stop();
+function edgePoint(a, b) { // where segment a→b leaves b's rectangle
+  const dx = a.x - b.x, dy = a.y - b.y;
+  if (!dx && !dy) return { x: b.x, y: b.y };
+  const sx = (b.w / 2 + 3) / Math.abs(dx || 1e-9), sy = (b.h / 2 + 3) / Math.abs(dy || 1e-9), s = Math.min(sx, sy);
+  return { x: b.x + dx * s, y: b.y + dy * s };
+}
+function drawSchema() {
+  edge.attr('d', d => { const p = edgePoint(d.source, d.target), q = edgePoint(d.target, d.source); return `M${q.x},${q.y}L${p.x},${p.y}`; });
+  edgeLbl.attr('x', d => (d.source.x + d.target.x) / 2).attr('y', d => (d.source.y + d.target.y) / 2 - 4);
+  snode.attr('transform', d => `translate(${d.x},${d.y})`);
+}
+snode.call(d3.drag()
+  .on('start', (e, d) => { d.fx = d.x; d.fy = d.y; })
+  .on('drag', (e, d) => { d.fx = d.x = e.x; d.fy = d.y = e.y; drawSchema(); })
+  .on('end', (e, d) => { d.fx = d.fy = null; }));
+function layoutSchema() {
+  sNodes.forEach((n, i) => { n.x = Math.cos(i) * 200; n.y = Math.sin(i) * 200; n.vx = n.vy = 0; });
+  sim.alpha(1); for (let i = 0; i < 400; i++) sim.tick();
+  drawSchema(); fitSchema();
+}
+function fitSchema() {
+  const box = ssvg.node().getBoundingClientRect(); if (!box.width) return;
+  const xs = sNodes.flatMap(n => [n.x - n.w / 2, n.x + n.w / 2]), ys = sNodes.flatMap(n => [n.y - 20, n.y + 20]);
+  const [x0, x1] = d3.extent(xs), [y0, y1] = d3.extent(ys);
+  const k = Math.min(1.3, 0.92 * Math.min(box.width / (x1 - x0), box.height / (y1 - y0)));
+  ssvg.call(szoom.transform, d3.zoomIdentity.translate(box.width / 2 - (x0 + x1) / 2 * k, box.height / 2 - (y0 + y1) / 2 * k).scale(k));
+}
+function paintSchemaSel() {
+  const sid = selected?.id;
+  snode.classed('sel', d => d.id === sid);
+  const hot = d => selected?.type === 'prop' ? d.p.id === sid : (d.source.id === sid || d.target.id === sid);
+  edge.classed('hot', hot).attr('marker-end', d => hot(d) ? 'url(#arrow-hot)' : 'url(#arrow)');
+  edgeLbl.classed('hot', hot);
+}
+let schemaLaid = false;
+document.getElementById('relayout').addEventListener('click', layoutSchema);
+
+/* ---------- tabs ---------- */
+function showTab(which) {
+  const tree = which === 'tree';
+  document.getElementById('tab-tree').setAttribute('aria-selected', tree);
+  document.getElementById('tab-schema').setAttribute('aria-selected', !tree);
+  document.getElementById('tree-svg').hidden = !tree;
+  document.getElementById('schema-svg').hidden = tree;
+  document.getElementById('tree-opts').hidden = !tree;
+  document.getElementById('schema-opts').hidden = tree;
+  document.getElementById('hint').textContent = tree
+    ? 'Click a node to open it · drag to pan · scroll or pinch to zoom'
+    : 'Each arrow is a property, pointing from its domain to its range · drag boxes to rearrange · dashed boxes come from the TTRpg ontology';
+  if (!tree && !schemaLaid) { schemaLaid = true; layoutSchema(); }
+  paintSchemaSel();
+}
+document.getElementById('tab-tree').onclick = () => showTab('tree');
+document.getElementById('tab-schema').onclick = () => showTab('schema');
+
+/* ---------- category buttons ---------- */
+const catsEl = document.getElementById('cats');
+CATS.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'cat-btn cat-' + c.key;
+  b.innerHTML = `<span class="dot"></span>${esc(c.name)} <span class="n">${catMembers.get(c.key).size}</span>`;
+  b.onclick = () => {
+    showTab('tree');
+    const ct = getKids(ROOT).find(k => k.cat === c.key);
+    getKids(ROOT).forEach(k => k.open = k === ct);
+    getKids(ct).forEach(k => k.open = false);
+    ROOT.open = true; ct.open = true;
+    select({ type: 'cat', id: c.key }, false, true);
+    renderTree(ct.key);
+    setTimeout(() => centerOn(ct.key, 0.18), 340);
+  };
+  catsEl.appendChild(b);
+});
+
+/* ---------- detail panel ---------- */
+const detail = document.getElementById('detail');
+const chip = id => byId.has(id)
+  ? `<button class="chip ${catCls(id)}" data-id="${esc(id)}"><span class="dot"></span>${esc(lbl(id))}</button>`
+  : `<span class="chip static" title="${id.startsWith('ttrpg:') ? 'Defined in the parent TTRpg ontology' : 'Literal datatype'}">${esc(id)}</span>`;
+const chipList = (ids, limit = 36, more) => {
+  const shown = ids.slice(0, limit).map(chip).join('');
+  return `<div class="chips">${shown}${ids.length > limit ? `<button class="chip more" data-more="${esc(more)}">+${ids.length - limit} more</button>` : ''}</div>`;
+};
+const IRI = id => id.startsWith('dnd:') ? 'https://w3id.org/DnD5eCharacter#' + id.slice(4) : id.startsWith('ttrpg:') ? 'https://w3id.org/TTRpg#' + id.slice(6) : id;
+let expandedMore = new Set();
+
+function renderDetail() {
+  if (!selected) { detail.innerHTML = ''; return; }
+  let h = '';
+  if (selected.type === 'cat') {
+    const c = CATS.find(x => x.key === selected.id);
+    h = `<div class="kicker cat-${c.key}"><span class="dot"></span>Category</div><h2>${esc(c.name)}</h2>
+      <div class="iri">${catMembers.get(c.key).size} classes under ${c.roots.length} top-level classes</div><hr class="rule">
+      <p class="desc empty">Grouping added by this viewer to organise the ontology's ${allRoots.length} top-level classes. It is not part of the ontology itself.</p>
+      <div class="sec"><h3>Top-level classes <span class="n">${c.roots.length}</span></h3>${chipList(c.roots)}</div>`;
+  } else if (selected.type === 'prop') {
+    const p = propById.get(selected.id);
+    const uses = D.rels.filter(r => r[1] === p.id);
+    h = `<div class="kicker cat-none"><span class="dot"></span>Property</div><h2>${esc(p.label)}</h2><div class="iri">${esc(IRI(p.id))}</div><hr class="rule">
+      ${p.comment ? `<p class="desc">${esc(p.comment)}</p>` : `<p class="desc empty">No description in the ontology.</p>`}
+      <div class="sec"><h3>Domain → range</h3><div class="chips">${chip(p.domain)}<span style="align-self:center;color:var(--muted)">→</span>${chip(p.range)}</div></div>
+      <div class="sec"><h3>Asserted on classes <span class="n">${uses.length}</span></h3>
+      ${uses.length ? chipList(uses.map(u => u[0]), 36, 'puse') : '<p class="desc empty">Declared in the schema but not used on any class in this file.</p>'}</div>`;
+  } else {
+    const id = selected.id, n = byId.get(id), cat = catOf.get(id);
+    const catName = CATS.find(c => c.key === cat)?.name || 'Class';
+    const ch = kids.get(id) || [];
+    const outs = outRels.get(id) || [], ins = inRels.get(id) || [];
+    const inBy = d3.group(ins, r => r[0]);
+    const asDom = D.props.filter(p => p.domain === id), asRng = D.props.filter(p => p.range === id);
+    h = `<div class="kicker ${catCls(id)}"><span class="dot"></span>${esc(catName)}</div>
+      <h2>${esc(n.label)}</h2><div class="iri">${esc(IRI(id))}</div>
+      ${id.startsWith('ttrpg:') ? '<div class="ns-note">Inherited from the parent TTRpg ontology.</div>' : ''}
+      <hr class="rule">
+      ${n.comment ? `<p class="desc">${esc(n.comment)}</p>` : `<p class="desc empty">No description in the ontology.</p>`}
+      ${n.parents.length ? `<div class="sec"><h3>Subclass of <span class="n">${n.parents.length}</span></h3>${chipList(n.parents)}</div>` : ''}
+      ${outs.length ? `<div class="sec"><h3>Relations</h3><div class="rel">${outs.map(([p, o]) =>
+        `<span class="p">${esc(p.split(':')[1])}</span><div class="chips">${byId.has(o) || o.includes(':') ? chip(o) : `<span class="chip static">${esc(o)}</span>`}</div>`).join('')}</div></div>` : ''}
+      ${ch.length ? `<div class="sec"><h3>Subclasses <span class="n">${ch.length}</span></h3>${chipList(ch, expandedMore.has('sub' + id) ? 1e9 : 36, 'sub' + id)}</div>` : ''}
+      ${[...inBy].map(([p, rs]) => `<div class="sec"><h3>Referenced by · ${esc(p.split(':')[1])} <span class="n">${rs.length}</span></h3>
+        ${chipList(rs.map(r => r[1]), expandedMore.has('in' + p + id) ? 1e9 : 36, 'in' + p + id)}</div>`).join('')}
+      ${asDom.length || asRng.length ? `<div class="sec"><h3>Schema properties</h3><div class="rel">
+        ${asDom.map(p => `<span class="p">${esc(p.id.split(':')[1])}</span><div class="chips">${chip(p.range)}</div>`).join('')}
+        ${asRng.map(p => `<span class="p">← ${esc(p.id.split(':')[1])}</span><div class="chips">${chip(p.domain)}</div>`).join('')}</div></div>` : ''}
+      <div class="actions"><button class="btn" id="show-tree">Show in tree</button></div>`;
+  }
+  h += `<div class="meta">Ontology by Ruben Wambacq, licensed CC BY 4.0. Includes only freely available SRD content.</div>`;
+  detail.innerHTML = h;
+  detail.scrollTop = 0;
+  const st = document.getElementById('show-tree');
+  if (st) st.onclick = () => { showTab('tree'); reveal(selected.id); };
+}
+detail.addEventListener('click', e => {
+  const m = e.target.closest('[data-more]');
+  if (m) { expandedMore.add(m.dataset.more); const k = detail.scrollTop; renderDetail(); detail.scrollTop = k; return; }
+  const c = e.target.closest('[data-id]');
+  if (c) select({ type: 'class', id: c.dataset.id }, true);
+});
+
+function select(s, doReveal, skipTree) {
+  selected = s; expandedMore = new Set();
+  renderDetail(); paintSchemaSel();
+  if (doReveal && s?.type === 'class' && !document.getElementById('tree-svg').hidden) reveal(s.id);
+  else if (!skipTree) renderTree(null);
+}
+
+/* ---------- search ---------- */
+const q = document.getElementById('q'), res = document.getElementById('results');
+const index = D.nodes.map(n => ({ id: n.id, l: n.label.toLowerCase(), k: n.id.toLowerCase() }));
+let hits = [], hi = 0;
+function doSearch() {
+  const s = q.value.trim().toLowerCase();
+  if (!s) { res.hidden = true; return; }
+  hits = index.filter(x => x.l.includes(s) || x.k.includes(s))
+    .sort((a, b) => (a.l.startsWith(s) ? 0 : 1) - (b.l.startsWith(s) ? 0 : 1) || a.l.localeCompare(b.l)).slice(0, 14);
+  hi = 0;
+  res.innerHTML = hits.length ? hits.map((x, i) => `<li role="option" data-i="${i}" aria-selected="${i === hi}" class="${catCls(x.id)}">
+    <span class="dot"></span>${esc(lbl(x.id))}<small>${esc(CATS.find(c => c.key === catOf.get(x.id))?.name || '')}</small></li>`).join('')
+    : '<li style="cursor:default;color:var(--muted)">No class matches that name</li>';
+  res.hidden = false;
+}
+function pick(i) {
+  const x = hits[i]; if (!x) return;
+  res.hidden = true; q.value = lbl(x.id);
+  showTab('tree'); select({ type: 'class', id: x.id }, true);
+}
+q.addEventListener('input', doSearch);
+q.addEventListener('focus', () => { if (q.value) doSearch(); });
+q.addEventListener('keydown', e => {
+  if (res.hidden) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault(); hi = (hi + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length;
+    res.querySelectorAll('li').forEach((li, i) => li.setAttribute('aria-selected', i === hi));
+  } else if (e.key === 'Enter') { e.preventDefault(); pick(hi); }
+  else if (e.key === 'Escape') res.hidden = true;
+});
+res.addEventListener('mousedown', e => { const li = e.target.closest('[data-i]'); if (li) { e.preventDefault(); pick(+li.dataset.i); } });
+q.addEventListener('blur', () => setTimeout(() => res.hidden = true, 120));
+
+/* ---------- start: categories open, Dexterity selected to show cross-links ---------- */
+ROOT.open = true;
+getKids(ROOT).forEach(c => c.open = true);
+const start = byId.has('dnd:Dexterity') ? 'dnd:Dexterity' : D.nodes[0].id;
+selected = { type: 'class', id: start };
+renderDetail();
+requestAnimationFrame(() => reveal(start));
+</script>

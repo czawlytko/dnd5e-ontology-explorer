@@ -1,0 +1,656 @@
+<title>D&amp;D 5e Ontology in 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.73.6/dist/3d-force-graph.min.js"></script>
+<style>
+/* Layout: a dark "night sky" 3D scene with a reading panel beside it, then the merge write-up, the Divination story and a glossary */
+:root {
+  --bg: #f2f3f6;
+  --panel: #ffffff;
+  --fg: #1c2030;
+  --muted: #5d6477;
+  --line: #d5d9e3;
+  --accent: #a3261d;
+  --accent-soft: #f8e6e3;
+  --gold: #8a6510;
+  --code-bg: #eceef3;
+  --f-dnd: #2b66a8;
+  --f-ttrpg: #2f7d45;
+  --f-none: #b85c00;
+  /* the 3D scene keeps one dark look in both themes */
+  --sky: #0d1018;
+  --sky-fg: #e4e6ee;
+  --sky-muted: #98a0b5;
+  --sky-line: #262b39;
+  --f-display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", Consolas, ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12141b; --panel: #1a1d27; --fg: #e4e6ee; --muted: #9aa1b4; --line: #2c3140;
+    --accent: #f07a6c; --accent-soft: #3a1f1d; --gold: #e3bc5c; --code-bg: #232735;
+    --f-dnd: #6fa6e6; --f-ttrpg: #6cc287; --f-none: #ff9f43; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12141b; --panel: #1a1d27; --fg: #e4e6ee; --muted: #9aa1b4; --line: #2c3140;
+  --accent: #f07a6c; --accent-soft: #3a1f1d; --gold: #e3bc5c; --code-bg: #232735;
+  --f-dnd: #6fa6e6; --f-ttrpg: #6cc287; --f-none: #ff9f43; color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.55 }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 22px 48px }
+header h1 { font-family: var(--f-display); font-weight: 700; font-size: 2.1rem; line-height: 1.1; margin: 0; text-wrap: balance }
+header p { margin: 6px 0 0; color: var(--muted); max-width: 78ch }
+header p b { color: var(--fg); font-weight: 500 }
+.fd { color: var(--f-dnd); font-weight: 700 } .ft { color: var(--f-ttrpg); font-weight: 700 } .fx { color: var(--f-none); font-weight: 700 }
+
+.lab { display: grid; grid-template-columns: minmax(0, 1fr) 370px; margin-top: 18px; border-radius: 10px; overflow: hidden; border: 1px solid var(--sky-line); height: min(82vh, 780px); min-height: 540px; background: var(--sky); color: var(--sky-fg) }
+.scene { position: relative; min-width: 0; min-height: 0 }
+#graph { position: absolute; inset: 0 }
+.overlay { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; pointer-events: none; z-index: 3 }
+.overlay > * { pointer-events: auto }
+.card { background: rgb(13 16 24 / .84); border: 1px solid var(--sky-line); border-radius: 8px; padding: 9px 11px; backdrop-filter: blur(6px) }
+.legend { font-size: .84rem; display: grid; gap: 4px }
+.legend h4, .try h4 { margin: 0 0 2px; font: 700 .7rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--sky-muted) }
+.legend label { display: flex; gap: 7px; align-items: center; cursor: pointer; white-space: nowrap }
+.legend .sw { width: 18px; height: 3px; border-radius: 2px; flex: none }
+.legend .dotsw { width: 10px; height: 10px; border-radius: 50%; flex: none; display: inline-block }
+.legend .n { color: var(--sky-muted); font: .74rem var(--f-mono); margin-left: auto; padding-left: 8px }
+.legend input { accent-color: #f9c74f; margin: 0 }
+.seg { display: inline-flex; border: 1px solid #3a4154; border-radius: 6px; overflow: hidden; margin: 2px 0 4px }
+.seg button { font: 500 .78rem/1 var(--f-body); color: var(--sky-muted); background: transparent; border: 0; padding: 5px 9px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: #e4e6ee; color: #0d1018 }
+.dots { display: grid; grid-template-columns: auto auto; gap: 3px 12px; font-size: .8rem; color: var(--sky-muted) }
+.dots span { display: flex; gap: 6px; align-items: center; white-space: nowrap }
+.try { max-width: 440px }
+.try .row { display: flex; flex-wrap: wrap; gap: 5px }
+.pill { font: 500 .82rem/1 var(--f-body); color: var(--sky-fg); background: transparent; border: 1px solid #3a4154; border-radius: 999px; padding: 6px 10px; cursor: pointer }
+.pill:hover { border-color: #f9c74f }
+.pill.warn { border-color: #ff6b5e; color: #ffb0a8 }
+.pill.gap { border-color: #ff9f43; color: #ffc68a }
+.search { position: relative; margin-top: 7px }
+.search input { width: 100%; box-sizing: border-box; font: .88rem var(--f-body); padding: 7px 9px; border-radius: 6px; border: 1px solid #3a4154; background: #151a26; color: var(--sky-fg) }
+.results { position: absolute; top: calc(100% + 3px); left: 0; right: 0; list-style: none; margin: 0; padding: 4px; background: #151a26; border: 1px solid #3a4154; border-radius: 6px; max-height: 260px; overflow: auto; z-index: 5 }
+.results li { padding: 5px 7px; border-radius: 4px; cursor: pointer; font-size: .86rem }
+.results li[aria-selected="true"], .results li:hover { background: #232a3b }
+.results small { color: var(--sky-muted); font: .7rem var(--f-mono); margin-left: 6px }
+.hint { position: absolute; left: 12px; bottom: 10px; font-size: .78rem; color: var(--sky-muted); z-index: 3; pointer-events: none }
+.labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2 }
+.labels div { position: absolute; transform: translate(-50%, -150%); font: 500 12px var(--f-body); color: var(--sky-fg); white-space: nowrap; text-shadow: 0 0 4px #000, 0 0 2px #000 }
+.labels div.big { font: 700 13.5px var(--f-display) }
+.labels div.sel { color: #ffd166; font-size: 14px; font-weight: 700 }
+.labels div.bad { color: #ff8a7f }
+.labels div.gap { color: #ffc68a }
+.scene-tooltip { font-family: var(--f-body) !important; background: rgb(13 16 24 / .9) !important; border: 1px solid var(--sky-line); border-radius: 6px; padding: 5px 8px !important }
+.nogl { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--sky-muted) }
+
+.side { border-left: 1px solid var(--sky-line); overflow: auto; padding: 18px 18px 24px; min-height: 0 }
+.side .kicker { font: 700 .72rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; display: flex; gap: 7px; align-items: center }
+.side .kicker i { width: 9px; height: 9px; border-radius: 50%; display: inline-block }
+.side h2 { font: 700 1.7rem/1.1 var(--f-display); margin: 6px 0 4px; text-wrap: balance }
+.side .iri { font: .74rem var(--f-mono); color: var(--sky-muted); word-break: break-all }
+.side .from { margin-top: 8px; font-size: .84rem; color: var(--sky-muted) }
+.side .from b { color: var(--sky-fg); font-weight: 500 }
+.side .desc { margin: 12px 0 0; font-size: .94rem; color: #cdd1dc }
+.side .desc.empty { color: var(--sky-muted); font-style: italic }
+.alert { margin-top: 14px; border: 1px solid #ff6b5e; background: rgb(255 107 94 / .1); border-radius: 8px; padding: 10px 12px; font-size: .9rem }
+.alert b { color: #ffb0a8 }
+.alert.gap { border-color: #ff9f43; background: rgb(255 159 67 / .1) }
+.alert.gap b { color: #ffc68a }
+.alert code { background: #1d2230; color: var(--sky-fg) }
+.grp { margin-top: 16px }
+.grp h3 { margin: 0 0 6px; font: 700 .72rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--sky-muted); display: flex; gap: 8px; align-items: center }
+.grp h3 .sw { width: 16px; height: 3px; border-radius: 2px; flex: none }
+.links { display: flex; flex-wrap: wrap; gap: 5px }
+.links button { font: .84rem/1.2 var(--f-body); color: var(--sky-fg); background: #161b27; border: 1px solid #2e3446; border-radius: 999px; padding: 4px 9px 4px 7px; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; text-align: left }
+.links button:hover { border-color: #f9c74f }
+.links button i { width: 7px; height: 7px; border-radius: 50%; flex: none }
+.links button em { font: normal .66rem var(--f-mono); color: #6cc287 }
+.links .lit { font: .76rem var(--f-mono); color: var(--sky-muted); border: 1px dashed #3a4154; border-radius: 999px; padding: 4px 9px }
+.links .more { color: var(--sky-muted); border-style: dashed }
+.props { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px 10px; align-items: center; font-size: .86rem }
+.props .p { font: .76rem var(--f-mono); color: #5ad1e6; white-space: nowrap }
+.props .p.warn { color: #ff8a7f }
+.triple { font: .74rem/1.5 var(--f-mono); color: var(--sky-muted); margin-top: 6px; word-break: break-all }
+button:focus-visible, input:focus-visible { outline: 2px solid #f9c74f; outline-offset: 2px }
+
+/* write-up */
+.prose h2 { font: 700 1.6rem/1.15 var(--f-display); margin: 0 0 10px; text-wrap: balance }
+.prose h3 { font: 700 1.1rem var(--f-body); margin: 22px 0 6px }
+.prose p { margin: 0 0 12px; max-width: 68ch }
+.prose section { min-width: 0 }
+.merge-intro { margin-top: 40px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px 40px }
+.sum { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 14px }
+.sum div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px }
+.sum b { display: block; font: 700 1.5rem/1.1 var(--f-display); font-variant-numeric: tabular-nums }
+.sum span { font-size: .82rem; color: var(--muted) }
+.issues { display: grid; gap: 10px; margin-top: 6px }
+.issue { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--sev); border-radius: 0 8px 8px 0; padding: 11px 14px; min-width: 0 }
+.issue.join { --sev: var(--f-none) } .issue.same { --sev: var(--accent) } .issue.typo { --sev: var(--muted) }
+.issue h4 { margin: 0 0 3px; font: 700 1rem var(--f-body); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline }
+.issue h4 small { font: 700 .66rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--sev) }
+.issue p { margin: 0; font-size: .93rem; max-width: none }
+.issue .fix { margin-top: 5px; font-size: .88rem; color: var(--muted) }
+.issue .fix b { color: var(--fg); font-weight: 500 }
+.options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px; margin: 8px 0 10px }
+.opt { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 6px }
+.opt.rec { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold) }
+.opt h4 { margin: 0; font: 700 1.02rem var(--f-body) }
+.opt .tag { font: 700 .66rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--gold) }
+.opt p { margin: 0; font-size: .92rem }
+.opt .pc { font-size: .86rem; color: var(--muted) }
+.opt .pc b { color: var(--fg); font-weight: 500 }
+pre { background: var(--code-bg); border-radius: 6px; padding: 9px 12px; overflow-x: auto; font: .78rem/1.55 var(--f-mono); margin: 4px 0 0 }
+pre .hl { color: var(--accent); font-weight: 700 }
+code { font: .86em var(--f-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px }
+.callout { border-left: 3px solid var(--gold); padding: 8px 14px; margin: 8px 0 0; max-width: 78ch }
+.explain { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 40px; margin-top: 44px }
+.mergecode { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.mergecode > div { min-width: 0 }
+.mergecode .tag { font: 700 .7rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--muted) }
+.result { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 4px 0 14px; max-width: 66ch }
+.compare { width: 100%; border-collapse: collapse; font-size: .92rem; margin: 6px 0 12px }
+.compare th, .compare td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+.compare th { font: 700 .72rem var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted) }
+.tbl { overflow-x: auto }
+
+.glossary { margin-top: 44px }
+.glossary > h2 { font: 700 1.6rem/1.15 var(--f-display); margin: 0 0 4px }
+.glossary > p { color: var(--muted); margin: 0 0 16px; max-width: 70ch }
+.terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 12px; margin: 0 }
+.term { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; min-width: 0 }
+.term dt { font: 700 1.05rem var(--f-body); display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline }
+.term dt small { font: .74rem var(--f-mono); color: var(--muted); font-weight: 400 }
+.term dt .new { font: 700 .62rem var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--gold) }
+.term dd { margin: 4px 0 0 }
+.term .ex { margin-top: 8px; font-size: .88rem; color: var(--muted) }
+.term .ex b { color: var(--gold); font-weight: 700; font-size: .7rem; letter-spacing: .09em; text-transform: uppercase; margin-right: 4px }
+
+@media (max-width: 900px) {
+  .lab { grid-template-columns: minmax(0, 1fr); height: auto; min-height: 0 }
+  .scene { height: 72vh; min-height: 460px }
+  .side { border-left: 0; border-top: 1px solid var(--sky-line) }
+  .explain, .merge-intro, .mergecode { grid-template-columns: minmax(0, 1fr) }
+  .dots { display: none }
+}
+@media (max-width: 520px) { .legend-card { display: none } header h1 { font-size: 1.7rem } .sum { grid-template-columns: minmax(0, 1fr) } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>D&amp;D 5e Ontology in 3D</h1>
+    <p>Two ontology files merged into one graph: <b class="fd">DnD5eCharacter.ttl</b> and the general tabletop-RPG vocabulary it builds on, <b class="ft">TTRpg.ttl</b>. That's <b id="n-nodes"></b> classes and <b id="n-links"></b> connections. Dots are colored by the file that defines them. <b class="fx">Orange</b> dots are names that something points to but that neither file defines. Click any dot to fly to it. Below the graph you'll find what the merge revealed, ways to merge for real, and a glossary.</p>
+  </header>
+
+  <div class="lab">
+    <div class="scene" id="scene">
+      <div id="graph"></div>
+      <div class="labels" id="labels"></div>
+      <div class="overlay">
+        <div class="card legend legend-card" id="legend">
+          <h4>Connections</h4>
+        </div>
+        <div class="card try">
+          <h4>Try these</h4>
+          <div class="row" id="presets"></div>
+          <div class="search">
+            <input id="q" type="search" placeholder="Find any class…" autocomplete="off" aria-label="Find a class">
+            <ul class="results" id="results" role="listbox" hidden></ul>
+          </div>
+        </div>
+      </div>
+      <div class="hint">Drag to rotate · right-drag to pan · scroll to zoom · click a dot to focus · click empty space to clear</div>
+    </div>
+    <aside class="side" id="side" aria-live="polite"></aside>
+  </div>
+
+  <div class="merge-intro prose">
+    <section>
+      <h2>How the two files were merged</h2>
+      <p>An ontology is a set of triples, so merging two ontologies is a <b>union</b>: pour every triple from both files into one graph. Nothing needs matching by hand. Wherever the files use the <b>same IRI</b>, they automatically connect at that node. Where the IRIs differ, even by one letter, the two stay separate.</p>
+      <div class="sum">
+        <div><b id="s-d"></b><span>triples from DnD5eCharacter.ttl</span></div>
+        <div><b id="s-t"></b><span>triples from TTRpg.ttl</span></div>
+        <div><b id="s-u"></b><span>in the merged graph (<span id="s-o"></span> were in both)</span></div>
+      </div>
+      <p>The D&amp;D file was written against TTRpg's namespace, so most of it lines up. <b>Weapon</b>, <b>Armor</b> and <b>Currency</b> now sit under TTRpg's <b>Item Type</b>, which gives 56 D&amp;D items a parent they lacked before. <b>Character</b> and <b>Location</b> were only references in the D&amp;D file and now have real definitions. TTRpg also adds the game-level ideas the D&amp;D file never mentions: Player, Campaign, World, Item and Action.</p>
+      <p>The two triples found in both files are the author's name and email, which each file repeats. Duplicates are harmless in a union, because the same triple only counts once.</p>
+    </section>
+    <section>
+      <h2>What didn't line up</h2>
+      <div class="issues">
+        <div class="issue join"><h4>Tools vs. Tool <small>Doesn't join</small></h4>
+          <p>The D&amp;D file hangs its 123 tools on <code>TTRpg:Tools</code>, but TTRpg defines <code>TTRpg:Tool</code>. Because of one letter, they're two unrelated nodes. Tools has no parent, and Tool has no children.</p>
+          <div class="fix"><b>Fix:</b> rename to <code>TTRpg:Tool</code> in the D&amp;D file, or add one bridging triple (see options below).</div></div>
+        <div class="issue join"><h4>Item Enhancement <small>Not defined</small></h4>
+          <p>The D&amp;D file uses <code>TTRpg:ItemEnhancement</code> as a parent for 3 classes, but TTRpg.ttl has no such class.</p>
+          <div class="fix"><b>Fix:</b> define it in the D&amp;D file's own namespace (<code>DnD5eCharacter:ItemEnhancement</code>), or ask TTRpg to add it.</div></div>
+        <div class="issue same"><h4>TTRpg's “type” property, defined three times <small>Same-IRI merge</small></h4>
+          <p><code>TTRpg:type</code> is declared three times, for characters, items and spells. That's the Divination problem again, this time on a property. Once loaded, it has 3 domains and 3 ranges. In RDFS, multiple domains all apply at once, so the merged file says <i>anything with a type is a Character and an Item and a Spell</i>. The original pairing is lost, and the graph shows all 9 combinations.</p>
+          <div class="fix"><b>Fix:</b> three properties (<code>characterType</code>, <code>itemType</code>, <code>spellType</code>). <code>TTRpg:existsIn</code> has the same issue with Item and Spell.</div></div>
+        <div class="issue typo"><h4>Small typos that change meaning <small>Quiet errors</small></h4>
+          <p>The D&amp;D file defines its alignment class as <code>Alignemnt</code>, but the 9 alignments point to <code>Alignment</code>, which is never defined. <code>DraconicAncestry</code> is used as a parent 9 times and never defined either. In TTRpg.ttl, line 215 says <code>owl:invereOf</code>, so the link between existsIn and hasItem is silently dropped.</p></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="prose" style="margin-top:34px">
+    <h2>Ways to merge for real</h2>
+    <p style="max-width:78ch">This page merges the files in memory each time it loads, which is fine for exploring. For anything your team relies on, these are the usual approaches. They combine well.</p>
+    <div class="options">
+      <div class="opt"><span class="tag">A · what this page does</span><h4>Load both and take the union</h4>
+        <p>Keep the files as they are and read both into one graph whenever you need them. Tools like Python's rdflib do this in two lines.</p>
+        <div class="pc"><b>Good:</b> no edits, always current. <b>Watch out:</b> every tool and person has to know to load both files.</div></div>
+      <div class="opt rec"><span class="tag">B · recommended</span><h4>Declare an import</h4>
+        <p>Add one triple to the D&amp;D file saying it imports TTRpg. Ontology editors such as Protégé and reasoners then fetch TTRpg automatically.</p>
+<pre>DnD5eCharacter:Ontology
+  owl:imports &lt;https://w3id.org/TTRpg&gt; .</pre>
+        <div class="pc"><b>Good:</b> the standard way to say “this extends that”. The D&amp;D file uses TTRpg terms today without declaring it.</div></div>
+      <div class="opt rec"><span class="tag">C · recommended with B</span><h4>Add an alignment file</h4>
+        <p>A small third file of bridging triples that fixes mismatches without editing either source.</p>
+<pre>TTRpg:Tools owl:equivalentClass TTRpg:Tool .
+DnD5eCharacter:Alignemnt
+  owl:equivalentClass DnD5eCharacter:Alignment .</pre>
+        <div class="pc"><b>Good:</b> you can fix things in files you don't own. <b>Watch out:</b> <code>equivalentClass</code> only takes effect in tools that apply OWL reasoning.</div></div>
+      <div class="opt"><span class="tag">D</span><h4>Write one merged file</h4>
+        <p>Save the union as a single new .ttl and share that.</p>
+        <div class="pc"><b>Good:</b> simplest to hand around. <b>Watch out:</b> it's a copy that drifts from the originals when they're updated, and you lose track of which file each fact came from.</div></div>
+    </div>
+    <p class="callout">Whichever you choose, keep track of <b>provenance</b>, meaning which file each triple came from. This page does that, which is how it can color dots by file. In RDF the standard tool for this is a <b>named graph</b>: each source file is loaded into its own labelled graph inside the same database.</p>
+  </section>
+
+  <div class="explain prose">
+    <section>
+      <h2>Why does Divination have two parents?</h2>
+      <p>It's an accident in the D&amp;D file. In an ontology, each thing is identified by an <b>IRI</b>, a web-address-style name. If two things share an IRI, the ontology treats them as one thing.</p>
+      <p>D&amp;D uses “Divination” for a <i>school of magic</i> and for a <i>spell</i> in that school. The file gives both the same IRI:</p>
+      <div class="mergecode">
+        <div><span class="tag">Line 1843 · the school</span>
+<pre>DnD5eCharacter:<span class="hl">Divination</span> a rdfs:Class ;
+  rdfs:subClassOf
+    DnD5eCharacter:MagicSchool .</pre></div>
+        <div><span class="tag">Line 2373 · the spell</span>
+<pre>DnD5eCharacter:<span class="hl">Divination</span> a rdfs:Class ;
+  rdfs:subClassOf TTRpg:Spell ;
+  DnD5eCharacter:inMagicSchool
+    DnD5eCharacter:<span class="hl">Divination</span> .</pre></div>
+      </div>
+      <p>When loaded, all of these statements land on one node:</p>
+      <div class="result">There is one thing called Divination. It is a kind of Magic School <i>and</i> a kind of Spell, it belongs to the school Divination (itself), and 28 other spells belong to it.</div>
+      <p><b>Shield</b> has the same problem: the armor (line 1289) and the spell (line 3417) share one IRI. Both are red in the 3D view. The fix is to give each its own IRI, such as <code>DivinationSchool</code> and <code>DivinationSpell</code>. The label can still say “Divination” for both.</p>
+    </section>
+    <section>
+      <h2>When multiple parents are on purpose</h2>
+      <p>Having several parents, called <b>multiple inheritance</b>, is allowed. The D&amp;D file uses it on purpose for 54 classes.</p>
+      <h3>Red Dragon</h3>
+      <p>Red Dragon is a <i>Subrace</i> (a red-dragon Dragonborn), a <i>Draconic Ancestry</i> (your breath weapon) and a <i>Draconic Bloodline</i> (a sorcerer origin). It's one idea that fits all three roles.</p>
+      <h3>Defense</h3>
+      <p>Defense is a fighting style that fighters, rangers and paladins can all pick, so it has four parents. All of them are correct.</p>
+      <div class="tbl"><table class="compare">
+        <thead><tr><th></th><th>On purpose (Red Dragon)</th><th>Accident (Divination)</th></tr></thead>
+        <tbody>
+          <tr><td>Is it one idea?</td><td>Yes</td><td>No, a school and a spell that share a name</td></tr>
+          <tr><td>Can one thing be all its parents?</td><td>Yes</td><td>No. Nothing is both a school and a spell.</td></tr>
+          <tr><td>Defined how many times?</td><td>Once</td><td>Twice, far apart in the file</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+  </div>
+
+  <section class="glossary">
+    <h2>Glossary</h2>
+    <p>These are the ontology terms used on this page, each with an example from these files. Terms marked <b style="color:var(--gold)">merge</b> are new with this version.</p>
+    <dl class="terms" id="terms"></dl>
+  </section>
+</div>
+
+<script type="application/json" id="onto">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById('onto').textContent);
+const byId = new Map(D.nodes.map(n => [n.id, n]));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lbl = id => byId.get(id)?.label || id.split(':').pop();
+const NS = { 'dnd:': 'https://w3id.org/DnD5eCharacter#', 'ttrpg:': 'https://w3id.org/TTRpg#', 'foaf:': 'http://xmlns.com/foaf/0.1/' };
+const IRI = id => { for (const p in NS) if (id.startsWith(p)) return NS[p] + id.slice(p.length); return id; };
+const FILES = { d: 'DnD5eCharacter.ttl', t: 'TTRpg.ttl' };
+const SRC_COLOR = { d: '#6fa6e6', t: '#6cc287', x: '#ff9f43' };
+const COLLISIONS = new Set(['dnd:Divination', 'dnd:Shield']);
+
+/* ---------- categories ---------- */
+const CATS = [
+  { key: 'play', name: 'Game & play (TTRpg)', color: '#f28fb6', roots: ['ttrpg:Character', 'ttrpg:Player', 'ttrpg:Campaign', 'ttrpg:World', 'ttrpg:Location', 'ttrpg:Item', 'ttrpg:Action', 'foaf:Person'] },
+  { key: 'char', name: 'Character', color: '#6fa6e6', roots: ['ttrpg:CharacterType', 'dnd:Subrace', 'dnd:Variant', 'dnd:Alignment', 'dnd:DraconicAncestry'] },
+  { key: 'feat', name: 'Class features', color: '#ec955a', roots: ['dnd:Subclass', 'dnd:FightingStyle'] },
+  { key: 'world', name: 'Creatures & terrain', color: '#6cc287', roots: ['dnd:MonsterType', 'dnd:Terrain'] },
+  { key: 'gear', name: 'Equipment', color: '#d6b15d', roots: ['ttrpg:ItemType', 'ttrpg:ItemEnhancement', 'ttrpg:Tools'] },
+  { key: 'magic', name: 'Magic', color: '#b293ec', roots: ['ttrpg:SpellType', 'ttrpg:Spell'] },
+];
+const kids = new Map();
+D.nodes.forEach(n => n.parents.forEach(p => { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(n.id); }));
+const listed = new Set(CATS.flatMap(c => c.roots));
+D.nodes.filter(n => !n.parents.length && !listed.has(n.id)).forEach(n => (n.id.startsWith('ttrpg:') ? CATS[0] : CATS[1]).roots.push(n.id));
+const catOf = new Map();
+CATS.forEach(c => {
+  const stack = [...c.roots], seen = new Set();
+  while (stack.length) { const id = stack.pop(); if (seen.has(id)) continue; seen.add(id); if (!catOf.has(id)) catOf.set(id, c); (kids.get(id) || []).forEach(k => stack.push(k)); }
+});
+let colorMode = 'file';
+const srcOf = id => byId.get(id)?.src || 'x';
+function colorOf(id) {
+  if (COLLISIONS.has(id)) return '#ff6b5e';
+  if (srcOf(id) === 'x') return SRC_COLOR.x;
+  if (colorMode === 'file') return SRC_COLOR[srcOf(id)[0]];
+  return catOf.get(id)?.color || '#98a0b5';
+}
+
+/* ---------- edge types ---------- */
+const ETYPES = [
+  { id: 'rdfs:subClassOf', short: 'subClassOf', color: '#c9d1e3', fwd: 'is a kind of', back: 'Kinds of this (subclasses)' },
+  { id: 'schema', short: 'domain → range', color: '#5ad1e6', fwd: '', back: '' },
+  { id: 'dnd:inMagicSchool', short: 'inMagicSchool', color: '#f9c74f', fwd: 'is in the magic school', back: 'Spells in this school' },
+  { id: 'dnd:subraceOf', short: 'subraceOf', color: '#f9c74f', fwd: 'is a subrace of', back: 'Subraces of this race' },
+  { id: 'dnd:subclassOf', short: 'subclassOf', color: '#f9c74f', fwd: 'is a D&D subclass option of', back: 'Subclass options for this class' },
+  { id: 'dnd:basedOn', short: 'basedOn', color: '#f9c74f', fwd: 'is based on the ability', back: 'Skills based on this ability' },
+  { id: 'dnd:variantOf', short: 'variantOf', color: '#f9c74f', fwd: 'is a variant of', back: 'Variants of this race' },
+  { id: 'dnd:type', short: 'type', color: '#f9c74f', fwd: 'has the monster type', back: 'Monsters of this type' },
+];
+const etype = new Map(ETYPES.map(e => [e.id, e]));
+const shown = new Set(ETYPES.map(e => e.id));
+
+/* ---------- graph data ---------- */
+const nodes = D.nodes.map(n => ({ id: n.id }));
+const nodeIndex = new Map(nodes.map(n => [n.id, n]));
+const links = [];
+D.sub.forEach(([s, p, src]) => links.push({ source: s, target: p, t: 'rdfs:subClassOf', src }));
+const literals = [];
+D.rels.forEach(([s, p, o, src]) => {
+  if (byId.has(o) && etype.has(p)) links.push({ source: s, target: o, t: p, src });
+  else if (!byId.has(o)) literals.push([s, p, o, src]);
+});
+const propById = new Map(D.props.map(p => [p.id, p]));
+D.props.forEach(p => {
+  const multi = p.domains.length > 1 || p.ranges.length > 1;
+  p.domains.forEach(d => p.ranges.forEach(r => {
+    if (byId.has(d) && byId.has(r)) links.push({ source: d, target: r, t: 'schema', p: p.id, src: p.src, multi });
+  }));
+});
+const outL = new Map(), inL = new Map(), deg = new Map();
+links.forEach(l => {
+  if (!outL.has(l.source)) outL.set(l.source, []); outL.get(l.source).push(l);
+  if (!inL.has(l.target)) inL.set(l.target, []); inL.get(l.target).push(l);
+  deg.set(l.source, (deg.get(l.source) || 0) + 1); deg.set(l.target, (deg.get(l.target) || 0) + 1);
+});
+const counts = new Map(ETYPES.map(e => [e.id, links.filter(l => l.t === e.id).length]));
+document.getElementById('n-nodes').textContent = nodes.length;
+document.getElementById('n-links').textContent = links.length.toLocaleString();
+document.getElementById('s-d').textContent = D.meta.d.triples.toLocaleString();
+document.getElementById('s-t').textContent = D.meta.t.triples.toLocaleString();
+document.getElementById('s-u').textContent = D.meta.union.toLocaleString();
+document.getElementById('s-o').textContent = D.meta.overlap;
+const hubs = new Set([...deg].filter(([, d]) => d >= 14).map(([id]) => id));
+const sid = x => typeof x === 'object' ? x.id : x;
+
+/* ---------- legend ---------- */
+const legend = document.getElementById('legend');
+ETYPES.forEach(e => {
+  const l = document.createElement('label');
+  l.innerHTML = `<input type="checkbox" checked id="et-${e.short.replace(/\W+/g, '')}"><span class="sw" style="background:${e.color}"></span>${esc(e.short)}<span class="n">${counts.get(e.id)}</span>`;
+  l.querySelector('input').addEventListener('change', ev => { ev.target.checked ? shown.add(e.id) : shown.delete(e.id); refresh(); });
+  legend.appendChild(l);
+});
+const dotsHead = document.createElement('h4'); dotsHead.style.marginTop = '6px'; dotsHead.textContent = 'Color dots by';
+const seg = document.createElement('div'); seg.className = 'seg';
+seg.innerHTML = '<button aria-pressed="true" data-m="file">Source file</button><button aria-pressed="false" data-m="cat">Category</button>';
+const dots = document.createElement('div'); dots.className = 'dots';
+function renderDots() {
+  const items = colorMode === 'file'
+    ? [[SRC_COLOR.d, FILES.d], [SRC_COLOR.t, FILES.t]]
+    : CATS.map(c => [c.color, c.name]);
+  dots.innerHTML = items.map(([c, n]) => `<span><i class="dotsw" style="background:${c}"></i>${esc(n)}</span>`).join('')
+    + `<span><i class="dotsw" style="background:${SRC_COLOR.x}"></i>Defined nowhere</span><span><i class="dotsw" style="background:#ff6b5e"></i>Two things merged</span>`;
+}
+seg.addEventListener('click', e => {
+  const b = e.target.closest('[data-m]'); if (!b) return;
+  colorMode = b.dataset.m;
+  seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderDots(); refresh(); renderSide();
+});
+legend.append(dotsHead, seg, dots); renderDots();
+
+/* ---------- selection state ---------- */
+let sel = null, nbrs = new Set(), hotLinks = new Set();
+function setSel(id) {
+  sel = id; nbrs = new Set(); hotLinks = new Set();
+  if (!id) return;
+  nbrs.add(id);
+  links.forEach(l => {
+    const s = sid(l.source), t = sid(l.target);
+    if ((s === id || t === id) && shown.has(l.t)) { hotLinks.add(l); nbrs.add(s); nbrs.add(t); }
+  });
+}
+
+/* ---------- 3D graph ---------- */
+const el = document.getElementById('graph'), scene = document.getElementById('scene');
+let G = null;
+function webglOK() { try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; } }
+if (typeof ForceGraph3D !== 'function' || !webglOK()) {
+  el.innerHTML = '<div class="nogl">The 3D view needs WebGL and an internet connection to load its graphics library. The panel and the write-up below still work.</div>';
+} else {
+  G = ForceGraph3D({ controlType: 'orbit' })(el)
+    .backgroundColor('#0d1018')
+    .showNavInfo(false)
+    .graphData({ nodes, links })
+    .nodeId('id')
+    .nodeLabel(n => `<b>${esc(lbl(n.id))}</b><br><span style="opacity:.7">${esc(n.id)} · ${esc(srcOf(n.id) === 'x' ? 'defined in neither file' : FILES[srcOf(n.id)[0]])}</span>`)
+    .nodeVal(n => COLLISIONS.has(n.id) || srcOf(n.id) === 'x' ? 10 : 1 + Math.sqrt(deg.get(n.id) || 0) * 1.4)
+    .nodeRelSize(2.6)
+    .nodeOpacity(0.92)
+    .linkCurvature(l => sid(l.source) === sid(l.target) ? 0.8 : l.t === 'schema' ? 0.18 : 0)
+    .linkDirectionalArrowRelPos(1)
+    .linkDirectionalParticleWidth(1.6)
+    .linkDirectionalParticleSpeed(0.006)
+    .onNodeClick(n => select(n.id, true))
+    .onBackgroundClick(() => select(null, false))
+    .cooldownTicks(260);
+  G.d3Force('charge').strength(-38);
+  G.d3Force('link').distance(l => l.t === 'rdfs:subClassOf' ? 22 : l.t === 'schema' ? 60 : 40);
+  const size = () => { G.width(el.clientWidth).height(el.clientHeight); };
+  new ResizeObserver(size).observe(scene); size();
+  let flewOnce = false;
+  G.onEngineStop(() => { if (!flewOnce) { flewOnce = true; if (sel) fly(sel, 2000); } });
+}
+const linkColor = l => l.t === 'schema' && l.multi ? '#ff8a7f' : etype.get(l.t).color;
+function refresh() {
+  setSel(sel);
+  if (!G) return;
+  const dim = !!sel;
+  G.linkVisibility(l => shown.has(l.t))
+    .nodeColor(n => !dim || nbrs.has(n.id) ? colorOf(n.id) : '#2b3142')
+    .linkColor(l => !dim || hotLinks.has(l) ? linkColor(l) : '#1c2130')
+    .linkOpacity(dim ? 0.75 : 0.32)
+    .linkWidth(l => hotLinks.has(l) ? 1.4 : 0)
+    .linkDirectionalArrowLength(l => hotLinks.has(l) ? 4 : 0)
+    .linkDirectionalArrowColor(linkColor)
+    .linkDirectionalParticles(l => hotLinks.has(l) ? 2 : 0)
+    .linkDirectionalParticleColor(linkColor);
+}
+function fly(id, ms = 1200) {
+  if (!G) return;
+  const n = nodeIndex.get(id); if (!n || n.x == null) return;
+  const dist = 120 + Math.min(220, (deg.get(id) || 1) * 1.2);
+  const r = Math.hypot(n.x, n.y, n.z) || 1;
+  const f = 1 + dist / r;
+  G.cameraPosition({ x: n.x * f, y: n.y * f, z: n.z * f }, { x: n.x, y: n.y, z: n.z }, ms);
+}
+function select(id, doFly) {
+  setSel(id); refresh(); renderSide();
+  if (id && doFly) fly(id);
+}
+
+/* ---------- floating labels for hubs, problem nodes and the current selection ---------- */
+const labelsEl = document.getElementById('labels');
+const labelPool = new Map();
+const problemIds = [...COLLISIONS, ...D.nodes.filter(n => n.src === 'x').map(n => n.id)];
+function drawLabels() {
+  requestAnimationFrame(drawLabels);
+  if (!G) return;
+  const want = new Set([...problemIds, ...(sel ? [...nbrs].slice(0, 60) : hubs)]);
+  const W = el.clientWidth, H = el.clientHeight;
+  labelPool.forEach((div, id) => { if (!want.has(id)) { div.remove(); labelPool.delete(id); } });
+  want.forEach(id => {
+    const n = nodeIndex.get(id); if (!n || n.x == null) return;
+    const p = G.graph2ScreenCoords(n.x, n.y, n.z);
+    let div = labelPool.get(id);
+    if (!div) { div = document.createElement('div'); div.textContent = lbl(id) + (srcOf(id) === 'x' ? ' ?' : ''); labelsEl.appendChild(div); labelPool.set(id, div); }
+    div.className = (id === sel ? 'sel ' : '') + (COLLISIONS.has(id) ? 'bad ' : srcOf(id) === 'x' ? 'gap ' : '') + (hubs.has(id) && !sel ? 'big' : '');
+    const vis = p.x > -50 && p.x < W + 50 && p.y > -20 && p.y < H + 20;
+    div.style.display = vis ? '' : 'none';
+    if (vis) { div.style.left = p.x + 'px'; div.style.top = p.y + 'px'; }
+  });
+}
+requestAnimationFrame(drawLabels);
+
+/* ---------- side panel ---------- */
+const ALERTS = {
+  'dnd:Divination': ['', '<b>Two ideas, one IRI.</b> The magic school and the spell named Divination share an identifier, so their facts merged. That’s why it’s both a kind of Magic School and a kind of Spell, and why it points to itself as its own school.'],
+  'dnd:Shield': ['', '<b>Two ideas, one IRI.</b> The armor called Shield and the spell called Shield share an identifier, so this one node is a kind of Armor <i>and</i> a kind of Spell.'],
+  'ttrpg:Tools': ['gap', '<b>Name mismatch.</b> The D&amp;D file puts its 123 tools under <code>TTRpg:Tools</code>, but TTRpg.ttl defines <code>TTRpg:Tool</code> (no s). Different IRIs never join, so this branch never reaches Item Type.'],
+  'ttrpg:Tool': ['gap', '<b>Name mismatch.</b> TTRpg defines Tool, but the D&amp;D file’s tools point at <code>TTRpg:Tools</code>, so this class has no members in the merged graph.'],
+  'ttrpg:ItemEnhancement': ['gap', '<b>Defined nowhere.</b> The D&amp;D file uses this as a TTRpg class, but TTRpg.ttl doesn’t define it. It has no description and no parent.'],
+  'dnd:Alignment': ['gap', '<b>Defined nowhere.</b> The 9 alignments point here, but the file defines the class with the misspelling <code>Alignemnt</code>, which is a separate node.'],
+  'dnd:Alignemnt': ['gap', '<b>Misspelled IRI.</b> This is the real alignment definition, but its name is spelled <code>Alignemnt</code>. It’s listed as a kind of the correctly spelled <code>Alignment</code>, which nothing defines.'],
+  'dnd:DraconicAncestry': ['gap', '<b>Defined nowhere.</b> Nine dragon colours say they are a kind of Draconic Ancestry, but the D&amp;D file never declares the class itself.'],
+  'foaf:Person': ['gap', '<b>From a third ontology.</b> TTRpg says a Player is a kind of <code>foaf:Person</code>. FOAF (Friend of a Friend) is a widely used vocabulary for people, but it isn’t loaded here. That’s expected: you only load what you need.'],
+  'ttrpg:Character': ['ok', '<b>Where the files meet.</b> TTRpg defines Character, and the D&amp;D file’s properties (hasClass, isRace, hasAlignment…) all start from it. Before the merge it was a bare reference. Now it has a definition and TTRpg’s own properties too.'],
+  'ttrpg:ItemType': ['ok', '<b>Joined by the merge.</b> TTRpg makes Weapon, Armor and Currency kinds of Item Type, so the D&amp;D file’s 56 weapons, armor and coins now sit under it too.'],
+};
+const side = document.getElementById('side');
+let expanded = new Set();
+function nodeBtn(id, src) {
+  const tag = src === 't' ? '<em>TTRpg</em>' : '';
+  return `<button data-id="${esc(id)}" title="${esc(id)}${src ? ' · stated in ' + esc(FILES[src[0]]) : ''}"><i style="background:${colorOf(id)}"></i>${esc(lbl(id))}${srcOf(id) === 'x' ? ' ?' : ''}${tag}</button>`;
+}
+function group(title, color, items, key) {
+  const lim = expanded.has(key) ? 1e9 : 30;
+  return `<div class="grp"><h3><span class="sw" style="background:${color}"></span>${esc(title)} <span style="font-family:var(--f-mono);letter-spacing:0">${items.length}</span></h3>
+    <div class="links">${items.slice(0, lim).map(([id, src]) => nodeBtn(id, src)).join('')}${items.length > lim ? `<button class="more" data-more="${esc(key)}">+${items.length - lim} more</button>` : ''}</div></div>`;
+}
+function propRows(ls, dir) {
+  return ls.map(l => {
+    const other = dir === 'out' ? sid(l.target) : sid(l.source);
+    const nm = l.p.replace(/^\w+:/, '');
+    return `<span class="p${l.multi ? ' warn' : ''}" title="${esc(l.p)} · ${esc(FILES[l.src[0]])}${l.multi ? ' · declared with several domains or ranges' : ''}">${dir === 'in' ? '← ' : ''}${esc(nm)}${l.multi ? ' ⚠' : ''}</span><div class="links">${nodeBtn(other, l.src)}</div>`;
+  }).join('');
+}
+function renderSide() {
+  if (!sel) {
+    side.innerHTML = `<div class="kicker" style="color:#98a0b5">Overview</div><h2>Two files, one graph</h2>
+      <p class="desc"><b style="color:${SRC_COLOR.d}">Blue</b> dots come from DnD5eCharacter.ttl and <b style="color:${SRC_COLOR.t}">green</b> from TTRpg.ttl. TTRpg is small (20 classes), but it sits at the junctions: Character, Item Type, Spell.</p>
+      <p class="desc"><b style="color:#ffc68a">Orange</b> dots are referenced but defined in neither file. Start with <b>Tools</b> to see a merge that didn’t join.</p>`;
+    return;
+  }
+  const n = byId.get(sel), cat = catOf.get(sel);
+  const outs = outL.get(sel) || [], ins = inL.get(sel) || [];
+  const where = n.src === 'x' ? '<b>neither file</b>' : n.src.split('').map(k => `<b>${FILES[k]}</b>`).join(' and ');
+  const statedIn = { d: 0, t: 0 };
+  [...outs, ...ins].forEach(l => l.src.split('').forEach(k => statedIn[k]++));
+  let h = `<div class="kicker" style="color:${colorOf(sel)}"><i style="background:${colorOf(sel)}"></i>${esc(COLLISIONS.has(sel) ? 'Two things merged into one' : n.src === 'x' ? 'Referenced, never defined' : cat?.name || 'Class')}</div>
+    <h2>${esc(n.label)}</h2><div class="iri">${esc(IRI(sel))}</div>
+    <div class="from">Defined in ${where}. Connections: ${statedIn.d} from the D&amp;D file, ${statedIn.t} from TTRpg.</div>`;
+  const a = ALERTS[sel];
+  if (a) h += `<div class="alert ${a[0] === 'gap' ? 'gap' : ''}" ${a[0] === 'ok' ? 'style="border-color:#6cc287;background:rgb(108 194 135 / .1)"' : ''}>${a[1]}</div>`;
+  else if (n.src === 'x') h += `<div class="alert gap"><b>Defined nowhere.</b> Something points to this IRI, but neither file declares it as a class or describes it.</div>`;
+  h += n.comment ? `<p class="desc">${esc(n.comment)}</p>` : `<p class="desc empty">No description (rdfs:comment) in either file.</p>`;
+  ETYPES.filter(e => e.id !== 'schema').forEach(e => {
+    const o = outs.filter(l => l.t === e.id).map(l => [sid(l.target), l.src]);
+    if (o.length) {
+      h += group(`${lbl(sel)} ${e.fwd}`, e.color, o, 'o' + e.id);
+      h += `<div class="triple">${o.slice(0, 2).map(([t]) => `${esc(sel)} ${esc(e.id)} ${esc(t)} .`).join('<br>')}</div>`;
+    }
+  });
+  const lits = literals.filter(r => r[0] === sel);
+  if (lits.length) h += `<div class="grp"><h3>Plain values (literals)</h3><div class="links">${lits.map(r => `<span class="lit">${esc(r[1].split(':')[1])} = ${esc(r[2])}</span>`).join('')}</div></div>`;
+  const sOut = outs.filter(l => l.t === 'schema'), sIn = ins.filter(l => l.t === 'schema');
+  if (sOut.length || sIn.length) {
+    h += `<div class="grp"><h3><span class="sw" style="background:#5ad1e6"></span>Properties (domain → range) <span style="font-family:var(--f-mono);letter-spacing:0">${sOut.length + sIn.length}</span></h3>
+      <div class="props">${propRows(sOut, 'out')}${propRows(sIn, 'in')}</div>
+      ${[...sOut, ...sIn].some(l => l.multi) ? '<p class="desc" style="font-size:.84rem">⚠ marks properties declared with several domains or ranges, such as TTRpg’s <code>type</code>. After loading, every combination applies, including ones the author never meant.</p>' : ''}</div>`;
+  }
+  ETYPES.filter(e => e.id !== 'schema').forEach(e => {
+    const i = ins.filter(l => l.t === e.id).map(l => [sid(l.source), l.src]).sort((a, b) => lbl(a[0]).localeCompare(lbl(b[0])));
+    if (i.length) h += group(e.back, e.color, i, 'i' + e.id);
+  });
+  if (n.parents.length > 1 && !COLLISIONS.has(sel)) h += `<p class="desc" style="font-size:.86rem">This class has <b>${n.parents.length} parents</b> on purpose. It belongs to all of those categories at once. This is called multiple inheritance.</p>`;
+  if (!n.parents.length && n.src !== 'x') h += `<p class="desc" style="font-size:.86rem">This is a <b>root class</b>: nothing above it in either file.</p>`;
+  side.innerHTML = h;
+  side.scrollTop = 0;
+}
+side.addEventListener('click', e => {
+  const m = e.target.closest('[data-more]'); if (m) { expanded.add(m.dataset.more); renderSide(); return; }
+  const b = e.target.closest('[data-id]'); if (b) { expanded = new Set(); select(b.dataset.id, true); }
+});
+
+/* ---------- presets & search ---------- */
+const PRESETS = [['ttrpg:Character', 'Character'], ['ttrpg:ItemType', 'Item Type'], ['ttrpg:Tools', 'Tools', 'gap'], ['ttrpg:ItemEnhancement', 'Item Enhancement', 'gap'], ['dnd:Alignment', 'Alignment', 'gap'],
+  ['dnd:Divination', 'Divination', 'warn'], ['dnd:Shield', 'Shield', 'warn'], ['dnd:RedDragon', 'Red Dragon'], ['ttrpg:Player', 'Player']];
+const pr = document.getElementById('presets');
+PRESETS.filter(p => byId.has(p[0])).forEach(([id, name, cls]) => {
+  const b = document.createElement('button'); b.className = 'pill' + (cls ? ' ' + cls : ''); b.textContent = name;
+  b.onclick = () => { expanded = new Set(); select(id, true); };
+  pr.appendChild(b);
+});
+const q = document.getElementById('q'), res = document.getElementById('results');
+let hits = [], hi = 0;
+q.addEventListener('input', () => {
+  const s = q.value.trim().toLowerCase();
+  if (!s) { res.hidden = true; return; }
+  hits = D.nodes.filter(n => n.label.toLowerCase().includes(s) || n.id.toLowerCase().includes(s))
+    .sort((a, b) => (a.label.toLowerCase().startsWith(s) ? 0 : 1) - (b.label.toLowerCase().startsWith(s) ? 0 : 1) || a.label.localeCompare(b.label)).slice(0, 12);
+  hi = 0;
+  res.innerHTML = hits.length ? hits.map((n, i) => `<li data-i="${i}" aria-selected="${i === 0}">${esc(n.label)}<small>${esc(n.id)}</small></li>`).join('') : '<li style="cursor:default;color:#98a0b5">No class matches that name</li>';
+  res.hidden = false;
+});
+q.addEventListener('keydown', e => {
+  if (res.hidden || !hits.length) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); hi = (hi + (e.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length; res.querySelectorAll('li').forEach((li, i) => li.setAttribute('aria-selected', i === hi)); }
+  else if (e.key === 'Enter') { e.preventDefault(); pickHit(hi); } else if (e.key === 'Escape') res.hidden = true;
+});
+res.addEventListener('mousedown', e => { const li = e.target.closest('[data-i]'); if (li) { e.preventDefault(); pickHit(+li.dataset.i); } });
+q.addEventListener('blur', () => setTimeout(() => res.hidden = true, 120));
+function pickHit(i) { const n = hits[i]; if (!n) return; res.hidden = true; q.value = n.label; expanded = new Set(); select(n.id, true); }
+
+/* ---------- glossary ---------- */
+const TERMS = [
+  ['Ontology', '', '', 'A shared, precise vocabulary for a subject. It lists the kinds of things that exist and the ways they can relate, written so software can read and reason over it.', 'TTRpg.ttl covers any tabletop RPG. DnD5eCharacter.ttl covers D&amp;D 5e characters specifically.'],
+  ['Triple', 'statement', '', 'The basic unit of an ontology: one fact in three parts, <i>subject · predicate · object</i>. An ontology is a big set of triples.', '<code>Fireball · inMagicSchool · Evocation</code>. The two files hold 3,137 and 180 triples.'],
+  ['Graph, node, edge', '', '', 'Triples that share subjects and objects link up into a network. Each subject or object is a <b>node</b> (a dot here) and each predicate is an <b>edge</b> (a line).', 'The 3D view draws every class as a node.'],
+  ['IRI', 'Internationalized Resource Identifier', '', 'A globally unique, web-address-style name for a thing. <b>Same IRI = same thing</b>, whatever the labels say. Different IRIs are different things, even if they differ by one letter.', 'Divination merges because two ideas share an IRI. Tools and Tool don’t join because their IRIs differ.'],
+  ['Namespace and prefix', '', '', 'A namespace is the shared start of a group of IRIs. A prefix is its short nickname, so <code>prefix:Name</code> stands for the full IRI.', '<code>TTRpg:</code> means <code>https://w3id.org/TTRpg#</code>. This page shortens the two files’ prefixes to <code>dnd:</code> and <code>ttrpg:</code>.'],
+  ['Class', 'rdfs:Class', '', 'A category or kind of thing. Its members share a definition.', 'Race, Spell, Campaign. The D&amp;D file makes every entry a class, even single spells like Fireball.'],
+  ['Subclass', 'rdfs:subClassOf', '', 'Says one class is a narrower kind of another: “every X is a Y”. Whatever is true of the parent class is true of the child. These are the pale lines.', '<code>Weapon rdfs:subClassOf ItemType</code> (from TTRpg.ttl).'],
+  ['Parent, child, root', '', '', 'In a subclass link, the broader class is the <b>parent</b> and the narrower one is the <b>child</b>. A <b>root class</b> has no parent. The links together form the <b>hierarchy</b>, or taxonomy.', 'Weapon was a root in the D&amp;D file alone. After the merge its parent is Item Type.'],
+  ['Multiple inheritance', '', '', 'A class with more than one parent. It belongs to all of its parent categories at once. This is legitimate, but it’s also how an IRI collision shows up.', 'Defense has 4 parents on purpose. Divination has 2 by accident.'],
+  ['Property', 'rdf:Property', '', 'A named kind of relationship, the “verb” used as the predicate of a triple.', 'TTRpg defines 16, such as <code>owns</code>, <code>knows</code> and <code>plays</code>. The D&amp;D file defines 23.'],
+  ['Domain and range', 'rdfs:domain · rdfs:range', '', 'The <b>domain</b> is what kind of thing a property starts from. The <b>range</b> is what it points to. The cyan lines in the 3D view draw these.', '<code>owns</code>: domain Character, range Item. A character owns an item.'],
+  ['Inverse property', 'owl:inverseOf', 'merge', 'Two properties that describe the same link from opposite ends. If A <i>plays</i> B, then B is <i>playedBy</i> A.', 'TTRpg pairs plays/playedBy and inWorld/hasLocation. A typo (<code>owl:invereOf</code>) breaks the existsIn/hasItem pair.'],
+  ['Literal and datatype', 'xsd:', '', 'A plain value rather than a node, such as a number or a word. Its datatype says which kind.', '<code>Arcane Tradition · unlocksAtClassLevel · 2</code>'],
+  ['Annotation', 'rdfs:label · rdfs:comment', '', 'Information for people rather than for logic: a readable name (label) and a description (comment).', 'The misspelled <code>Alignemnt</code> class still has the label “Alignment”. Labels don’t fix IRIs.'],
+  ['Instance', 'individual', '', 'One specific member of a class, as opposed to the class itself. Instances are the actual data an ontology describes.', 'Neither file has any. Your character “Thorin” would be an instance of TTRpg’s PlayableCharacter, played by an instance of Player.'],
+  ['Merge (union)', '', 'merge', 'Combining ontologies by putting all their triples into one graph. Identical triples collapse into one, and identical IRIs become one node.', '3,137 + 180 triples, with 2 shared, gives 3,315.'],
+  ['Import', 'owl:imports', 'merge', 'A statement inside an ontology saying “to understand me, also load that ontology.” Editors and reasoners follow imports automatically.', 'The D&amp;D file uses TTRpg terms but doesn’t declare <code>owl:imports</code>. Adding it is option B above.'],
+  ['Alignment', 'owl:equivalentClass', 'merge', 'Bridging statements that say how terms in different ontologies relate, such as “these two classes mean the same thing”. They are often kept in their own file.', '<code>TTRpg:Tools owl:equivalentClass TTRpg:Tool</code> would join the 123 tools to Item Type.'],
+  ['Dangling reference', '', 'merge', 'An IRI that something points to but that no loaded file defines. It still becomes a node, but an empty one with no label, description or parent. These are the orange dots.', '<code>TTRpg:ItemEnhancement</code>, <code>DraconicAncestry</code> and <code>foaf:Person</code>.'],
+  ['Provenance and named graphs', '', 'merge', 'Provenance is a record of where each fact came from. A <b>named graph</b> is the RDF way to keep it: each source is loaded into its own labelled graph within one dataset.', 'The “Source file” coloring and the TTRpg tags in the panel come from tracking provenance during the merge.'],
+  ['subClassOf vs. subclassOf', 'a naming trap', '', '<code>rdfs:subClassOf</code> is the general “is a kind of” link. <code>dnd:subclassOf</code> is the D&amp;D file’s property for D&amp;D <i>subclasses</i>, which are character options.', '<code>PrimalPath dnd:subclassOf Barbarian</code> means “Primal Path is the Barbarian’s subclass choice”.'],
+  ['RDF, RDFS, OWL', '', '', '<b>RDF</b> is the triple data model. <b>RDFS</b> adds classes, subclasses, properties, domain and range. <b>OWL</b> adds richer logic, such as imports, equivalence, inverses and “these classes can’t overlap”.', 'Both files mostly use RDFS. TTRpg also uses <code>owl:inverseOf</code>.'],
+  ['Turtle', '.ttl', '', 'A compact text format for writing triples. <code>a</code> means “is of type”, <code>;</code> means “same subject, next fact” and <code>.</code> ends the subject.', 'Both files are Turtle.'],
+];
+document.getElementById('terms').innerHTML = TERMS.map(([t, sub, isNew, def, ex]) =>
+  `<div class="term"><dt>${esc(t)}${sub ? `<small>${esc(sub)}</small>` : ''}${isNew ? '<span class="new">merge</span>' : ''}</dt><dd>${def}<div class="ex"><b>In these files</b>${ex}</div></dd></div>`).join('');
+
+/* ---------- start on Character, where the two files meet ---------- */
+setSel('ttrpg:Character'); refresh(); renderSide();
+</script>
